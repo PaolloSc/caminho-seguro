@@ -4,7 +4,7 @@ import { ReportDrawer } from "@/components/ReportDrawer";
 import { Button } from "@/components/ui/button-custom";
 import { useReports, useVerifyReport } from "@/hooks/use-reports";
 import { useAuth } from "@/hooks/use-auth";
-import { Plus, Shield, User, Menu, X, LogOut, Moon, Sun } from "lucide-react";
+import { Plus, Shield, User, Menu, X, LogOut, Moon, Sun, AlertTriangle, Lightbulb, Ghost, ThumbsUp } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
