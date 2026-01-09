@@ -9,7 +9,7 @@ export * from "./models/auth";
 export const reports = pgTable("reports", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").notNull(), // Links to auth.users.id
-  type: text("type").notNull(), // 'harassment', 'poor_lighting', 'deserted', 'safe_haven', 'other'
+  type: text("type").notNull(), // 'assedio', 'iluminacao_precaria', 'deserto', 'abrigo_seguro', 'outro'
   description: text("description").notNull(),
   severity: integer("severity").default(1), // 1-5
   lat: real("lat").notNull(),

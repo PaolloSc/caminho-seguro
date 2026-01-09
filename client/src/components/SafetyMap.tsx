@@ -24,19 +24,19 @@ const createIcon = (type: string) => {
   let colorClass;
 
   switch (type) {
-    case 'harassment':
+    case 'assedio':
       iconComponent = <AlertTriangle className="w-5 h-5 text-white" />;
       colorClass = 'bg-destructive';
       break;
-    case 'poor_lighting':
+    case 'iluminacao_precaria':
       iconComponent = <Lightbulb className="w-5 h-5 text-white" />;
       colorClass = 'bg-[hsl(var(--warning))]';
       break;
-    case 'deserted':
+    case 'deserto':
       iconComponent = <Ghost className="w-5 h-5 text-white" />;
       colorClass = 'bg-gray-500';
       break;
-    case 'safe_haven':
+    case 'abrigo_seguro':
       iconComponent = <Shield className="w-5 h-5 text-white" />;
       colorClass = 'bg-[hsl(var(--safe))]';
       break;
@@ -109,7 +109,7 @@ interface SafetyMapProps {
 export function SafetyMap({ reports, onAddReport, onViewReport, className }: SafetyMapProps) {
   const { user } = useAuth();
   const { mutate: verifyReport, isPending: isVerifying } = useVerifyReport();
-  const [mapCenter, setMapCenter] = useState<[number, number]>([40.7128, -74.0060]); // Default NY
+  const [mapCenter, setMapCenter] = useState<[number, number]>([-23.5505, -46.6333]); // Default SP
 
   return (
     <div className={className}>
@@ -138,14 +138,14 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className }: Saf
               <div className="p-1 min-w-[200px]">
                 <div className="flex items-center gap-2 mb-2">
                   <span className={`px-2 py-1 rounded-md text-xs font-bold uppercase text-white
-                    ${report.type === 'harassment' ? 'bg-destructive' : 
-                      report.type === 'safe_haven' ? 'bg-[hsl(var(--safe))]' :
-                      report.type === 'poor_lighting' ? 'bg-[hsl(var(--warning))]' : 'bg-gray-500'}`
+                    ${report.type === 'assedio' ? 'bg-destructive' : 
+                      report.type === 'abrigo_seguro' ? 'bg-[hsl(var(--safe))]' :
+                      report.type === 'iluminacao_precaria' ? 'bg-[hsl(var(--warning))]' : 'bg-gray-500'}`
                   }>
                     {report.type.replace('_', ' ')}
                   </span>
                   <span className="text-xs text-muted-foreground ml-auto">
-                    {format(new Date(report.createdAt!), 'MMM d, HH:mm')}
+                    {format(new Date(report.createdAt!), 'd MMM, HH:mm')}
                   </span>
                 </div>
                 
@@ -154,7 +154,7 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className }: Saf
                 <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <ThumbsUp className="w-3 h-3" />
-                    <span>{report.verifiedCount} verified</span>
+                    <span>{report.verifiedCount} verificações</span>
                   </div>
                   
                   <div className="flex gap-2">
@@ -176,7 +176,7 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className }: Saf
                       className="h-8 px-3 text-xs"
                       onClick={() => onViewReport(report.id)}
                     >
-                      Details
+                      Detalhes
                     </Button>
                   </div>
                 </div>

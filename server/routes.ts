@@ -82,34 +82,34 @@ export async function registerRoutes(
     }
   });
 
-  // Seed Data (if empty)
+  // Dados Iniciais (se vazio)
   const existing = await storage.getReports();
   if (existing.length === 0) {
     const demoUserId = "demo_user";
-    // San Francisco / Bay Area demo points
+    // Pontos de demonstração em São Paulo
     await storage.createReport({
       userId: demoUserId,
-      type: "poor_lighting",
-      description: "Street lights are broken on this entire block.",
+      type: "iluminacao_precaria",
+      description: "Postes de luz quebrados em todo este quarteirão.",
       severity: 3,
-      lat: 37.7749,
-      lng: -122.4194,
+      lat: -23.5505,
+      lng: -46.6333,
     });
     await storage.createReport({
       userId: demoUserId,
-      type: "deserted",
-      description: "Very quiet area at night, no shops open.",
+      type: "deserto",
+      description: "Área muito silenciosa à noite, sem lojas abertas.",
       severity: 2,
-      lat: 37.7849,
-      lng: -122.4094,
+      lat: -23.5605,
+      lng: -46.6233,
     });
     await storage.createReport({
       userId: demoUserId,
-      type: "harassment",
-      description: "Groups of people loitering and catcalling.",
+      type: "assedio",
+      description: "Grupos de pessoas importunando e assobiando.",
       severity: 5,
-      lat: 37.7649,
-      lng: -122.4294,
+      lat: -23.5405,
+      lng: -46.6433,
     });
   }
 
