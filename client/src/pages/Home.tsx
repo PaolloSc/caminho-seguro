@@ -41,9 +41,9 @@ export default function Home() {
   };
 
   return (
-    <div className="h-screen w-full flex flex-col overflow-hidden relative bg-background">
+    <div className="h-screen w-full flex flex-col overflow-hidden relative bg-background safe-top safe-bottom">
       {/* Top Navigation Bar */}
-      <header className="absolute top-0 left-0 right-0 z-20 p-4 pointer-events-none">
+      <header className="absolute top-0 left-0 right-0 z-20 p-4 pointer-events-none safe-top">
         <div className="max-w-7xl mx-auto flex items-center justify-between pointer-events-auto">
           <div className="bg-card/90 backdrop-blur-md px-4 py-2 rounded-full shadow-lg border border-border flex items-center gap-2">
             <div className="bg-primary/10 p-1.5 rounded-full">
