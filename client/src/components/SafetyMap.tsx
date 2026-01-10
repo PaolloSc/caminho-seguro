@@ -1,15 +1,16 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, CircleMarker } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, CircleMarker, Polyline } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet.heat";
 import { Report } from "@shared/schema";
 import { format } from "date-fns";
-import { Shield, AlertTriangle, Lightbulb, Ghost, HelpCircle, MapPin, ThumbsUp, ThumbsDown, MessageCircle, Flag, Bus, TreePine, Building2, Siren, Flame } from "lucide-react";
+import { Shield, AlertTriangle, Lightbulb, Ghost, HelpCircle, MapPin, ThumbsUp, ThumbsDown, MessageCircle, Flag, Bus, TreePine, Building2, Siren, Flame, Navigation, X, Search, Loader2 } from "lucide-react";
 import { renderToString } from "react-dom/server";
 import { Button } from "./ui/button-custom";
 import { useAuth } from "@/hooks/use-auth";
 import { useVerifyReport, useDownvoteReport, useFlagReport } from "@/hooks/use-reports";
+import { useToast } from "@/hooks/use-toast";
 
 // Tipos de POI
 interface POI {
@@ -581,6 +582,78 @@ function HeatmapLayer({ reports, showHeatmap }: { reports: Report[]; showHeatmap
   return null;
 }
 
+// Função para buscar rota via OSRM
+async function fetchRoute(start: [number, number], end: [number, number]): Promise<[number, number][] | null> {
+  try {
+    const url = `https://router.project-osrm.org/route/v1/foot/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`;
+    const response = await fetch(url);
+    const data = await response.json();
+    
+    if (data.code === 'Ok' && data.routes?.[0]) {
+      const coords = data.routes[0].geometry.coordinates;
+      return coords.map((c: [number, number]) => [c[1], c[0]] as [number, number]);
+    }
+    return null;
+  } catch (error) {
+    console.error('Erro ao buscar rota:', error);
+    return null;
+  }
+}
+
+// Função para calcular índice de segurança da rota
+function calculateRouteSafety(route: [number, number][], reports: Report[]): { score: number; nearbyDangers: number; totalSeverity: number } {
+  const dangerRadius = 0.002; // ~200 metros
+  const dangerReportsNearRoute = new Set<number>();
+  let totalSeverity = 0;
+  
+  // Para cada relato perigoso, verificar se está próximo de algum ponto da rota
+  for (const report of reports) {
+    if (report.type === 'abrigo_seguro') continue;
+    
+    for (const point of route) {
+      const dist = Math.sqrt(Math.pow(point[0] - report.lat, 2) + Math.pow(point[1] - report.lng, 2));
+      if (dist < dangerRadius) {
+        dangerReportsNearRoute.add(report.id);
+        // Peso por severidade e tipo
+        const severityWeight = report.severity || 3;
+        const typeWeight = report.type === 'assedio' ? 2 : 1;
+        totalSeverity += severityWeight * typeWeight;
+        break; // Já encontrou o relato próximo à rota, passar para o próximo relato
+      }
+    }
+  }
+  
+  const nearbyDangers = dangerReportsNearRoute.size;
+  // Score baseado na severidade total dos perigos (máx 100, min 0)
+  // Cada ponto de severidade reduz 5 pontos do score
+  const score = Math.max(0, Math.min(100, 100 - (totalSeverity * 5)));
+  
+  return { score: Math.round(score), nearbyDangers, totalSeverity };
+}
+
+// Função para geocodificar endereço
+async function geocodeAddress(query: string): Promise<{ lat: number; lng: number; display: string } | null> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=br&limit=1`;
+    const response = await fetch(url, {
+      headers: { 'Accept-Language': 'pt-BR' }
+    });
+    const data = await response.json();
+    
+    if (data?.[0]) {
+      return {
+        lat: parseFloat(data[0].lat),
+        lng: parseFloat(data[0].lon),
+        display: data[0].display_name.split(',').slice(0, 3).join(', ')
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error('Erro ao geocodificar:', error);
+    return null;
+  }
+}
+
 interface SafetyMapProps {
   reports: Report[];
   onAddReport: (lat: number, lng: number) => void;
@@ -591,6 +664,7 @@ interface SafetyMapProps {
 
 export function SafetyMap({ reports, onAddReport, onViewReport, className, isNightMode = false }: SafetyMapProps) {
   const { user } = useAuth();
+  const { toast } = useToast();
   const { mutate: verifyReport, isPending: isVerifying } = useVerifyReport();
   const { mutate: downvoteReport, isPending: isDownvoting } = useDownvoteReport();
   const { mutate: flagReport, isPending: isFlagging } = useFlagReport();
@@ -601,9 +675,86 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
   const [showPOIs, setShowPOIs] = useState(false); // Desativado por padrão para performance
   const mapRef = useRef<L.Map | null>(null);
   
+  // Estado do planejador de rotas
+  const [showRoutePlanner, setShowRoutePlanner] = useState(false);
+  const [destinationQuery, setDestinationQuery] = useState('');
+  const [isSearchingRoute, setIsSearchingRoute] = useState(false);
+  const [routeCoords, setRouteCoords] = useState<[number, number][] | null>(null);
+  const [routeSafety, setRouteSafety] = useState<{ score: number; nearbyDangers: number; totalSeverity: number } | null>(null);
+  const [destinationMarker, setDestinationMarker] = useState<[number, number] | null>(null);
+  
   const handleFlag = (reportId: number) => {
     if (!user) return;
     flagReport({ reportId, reason: 'falso' });
+  };
+
+  // Função para buscar rota segura
+  const handleSearchRoute = async () => {
+    if (!userPosition || !destinationQuery.trim()) return;
+    
+    setIsSearchingRoute(true);
+    setRouteCoords(null);
+    setRouteSafety(null);
+    
+    try {
+      // Geocodificar destino
+      const destination = await geocodeAddress(destinationQuery);
+      if (!destination) {
+        toast({
+          title: "Endereço não encontrado",
+          description: "Não foi possível encontrar o endereço. Tente ser mais específica.",
+          variant: "destructive"
+        });
+        setIsSearchingRoute(false);
+        return;
+      }
+      
+      setDestinationMarker([destination.lat, destination.lng]);
+      
+      // Buscar rota
+      const route = await fetchRoute(
+        [userPosition.lat, userPosition.lng],
+        [destination.lat, destination.lng]
+      );
+      
+      if (!route) {
+        toast({
+          title: "Rota não encontrada",
+          description: "Não foi possível calcular uma rota para este destino.",
+          variant: "destructive"
+        });
+        setIsSearchingRoute(false);
+        return;
+      }
+      
+      setRouteCoords(route);
+      const safety = calculateRouteSafety(route, reports);
+      setRouteSafety(safety);
+      
+      // Centralizar mapa na rota
+      if (mapRef.current && route.length > 0) {
+        const bounds = L.latLngBounds(route.map(c => L.latLng(c[0], c[1])));
+        mapRef.current.fitBounds(bounds, { padding: [50, 50] });
+      }
+    } catch (error) {
+      console.error('Erro ao buscar rota:', error);
+      toast({
+        title: "Erro ao calcular rota",
+        description: "Ocorreu um erro. Tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSearchingRoute(false);
+    }
+  };
+
+  // Limpar rota
+  const clearRoute = () => {
+    setRouteCoords(null);
+    setRouteSafety(null);
+    setDestinationMarker(null);
+    setDestinationQuery('');
+    setShowRoutePlanner(false);
   };
 
   const handleHeadingChange = (heading: number) => {
@@ -743,7 +894,130 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
             </Popup>
           </Marker>
         ))}
+        
+        {/* Rota traçada */}
+        {routeCoords && (
+          <Polyline 
+            positions={routeCoords}
+            pathOptions={{
+              color: routeSafety && routeSafety.score >= 70 ? '#22c55e' : 
+                     routeSafety && routeSafety.score >= 40 ? '#eab308' : '#ef4444',
+              weight: 6,
+              opacity: 0.8,
+              dashArray: undefined
+            }}
+          />
+        )}
+        
+        {/* Marcador de destino */}
+        {destinationMarker && (
+          <Marker 
+            position={destinationMarker}
+            icon={L.divIcon({
+              className: 'custom-marker',
+              html: `<div class="w-8 h-8 rounded-full bg-blue-600 border-2 border-white shadow-lg flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+              </div>`,
+              iconSize: [32, 32],
+              iconAnchor: [16, 32]
+            })}
+          >
+            <Popup>
+              <span className="font-medium">Seu destino</span>
+            </Popup>
+          </Marker>
+        )}
       </MapContainer>
+      
+      {/* Botão para abrir planejador de rotas */}
+      <button
+        onClick={() => setShowRoutePlanner(!showRoutePlanner)}
+        className={`absolute top-20 left-4 z-[500] w-11 h-11 rounded-full shadow-lg flex items-center justify-center border transition-all
+          ${showRoutePlanner || routeCoords
+            ? 'bg-blue-600 border-blue-400 text-white' 
+            : 'bg-card/90 backdrop-blur-md border-border text-foreground hover:bg-card'
+          }`}
+        title="Planejar rota segura"
+        data-testid="button-route-planner"
+      >
+        <Navigation className="w-5 h-5" />
+      </button>
+      
+      {/* Painel do planejador de rotas */}
+      {showRoutePlanner && (
+        <div className="absolute top-32 left-4 z-[500] w-80 bg-card/95 backdrop-blur-md rounded-xl shadow-xl border border-border p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-sm">Planejar Rota Segura</h3>
+            <button
+              onClick={clearRoute}
+              className="text-muted-foreground hover:text-foreground"
+              data-testid="button-close-route-planner"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg text-sm">
+              <div className="w-3 h-3 rounded-full bg-green-500" />
+              <span className="text-muted-foreground">Sua localização</span>
+              {!userPosition && (
+                <span className="text-xs text-destructive ml-auto">Aguardando GPS...</span>
+              )}
+            </div>
+            
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={destinationQuery}
+                onChange={(e) => setDestinationQuery(e.target.value)}
+                placeholder="Digite o destino..."
+                className="flex-1 px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                onKeyDown={(e) => e.key === 'Enter' && handleSearchRoute()}
+                data-testid="input-destination"
+              />
+              <Button
+                onClick={handleSearchRoute}
+                disabled={!userPosition || !destinationQuery.trim() || isSearchingRoute}
+                size="icon"
+                variant="primary"
+                data-testid="button-search-route"
+              >
+                {isSearchingRoute ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Search className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
+            
+            {/* Resultado da segurança da rota */}
+            {routeSafety && (
+              <div className={`p-3 rounded-lg ${
+                routeSafety.score >= 70 ? 'bg-green-500/10 border border-green-500/30' :
+                routeSafety.score >= 40 ? 'bg-yellow-500/10 border border-yellow-500/30' :
+                'bg-red-500/10 border border-red-500/30'
+              }`}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">Índice de Segurança</span>
+                  <span className={`text-2xl font-bold ${
+                    routeSafety.score >= 70 ? 'text-green-500' :
+                    routeSafety.score >= 40 ? 'text-yellow-500' :
+                    'text-red-500'
+                  }`}>
+                    {routeSafety.score}%
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {routeSafety.nearbyDangers === 0 
+                    ? 'Nenhum relato de perigo próximo à rota.'
+                    : `${routeSafety.nearbyDangers} ponto(s) com relatos de perigo próximo(s).`}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       
       {/* Botões de camadas - fora do MapContainer */}
       <div className="absolute top-20 right-4 z-[500] flex flex-col gap-2">
