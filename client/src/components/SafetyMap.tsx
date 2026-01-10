@@ -209,6 +209,7 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
   
   const [userPosition, setUserPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [selectedPOI, setSelectedPOI] = useState<POI | null>(null);
   const [showHeatmap, setShowHeatmap] = useState(true);
   const [showPOIs, setShowPOIs] = useState(true);
   const [pois, setPois] = useState<POI[]>([]);
@@ -294,9 +295,9 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
   };
 
   const handleMapClick = useCallback((e: any) => {
-    if (e.originalEvent.target === e.target.getCanvas()) {
-      onAddReport(e.lngLat.lat, e.lngLat.lng);
-    }
+    setSelectedReport(null);
+    setSelectedPOI(null);
+    onAddReport(e.lngLat.lat, e.lngLat.lng);
   }, [onAddReport]);
 
   const handleGeolocate = useCallback((e: GeolocateResultEvent) => {
@@ -483,8 +484,14 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
               longitude={poi.lng}
               latitude={poi.lat}
               anchor="center"
+              onClick={(e) => {
+                e.originalEvent.stopPropagation();
+                setSelectedPOI(poi);
+                setSelectedReport(null);
+              }}
             >
               <div
+                className="cursor-pointer transition-transform hover:scale-110"
                 style={{
                   width: 24,
                   height: 24,
@@ -496,12 +503,50 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
                   alignItems: 'center',
                   justifyContent: 'center'
                 }}
+                data-testid={`marker-poi-${poi.id}`}
               >
                 <Icon className="w-3 h-3 text-white" />
               </div>
             </Marker>
           );
         })}
+        
+        {selectedPOI && (
+          <Popup
+            longitude={selectedPOI.lng}
+            latitude={selectedPOI.lat}
+            anchor="bottom"
+            onClose={() => setSelectedPOI(null)}
+            closeButton={true}
+            closeOnClick={false}
+            className="poi-popup"
+          >
+            <div className="p-2 min-w-[150px]">
+              <div className="flex items-center gap-2">
+                {(() => {
+                  const Icon = getPOIIcon(selectedPOI.type);
+                  return <Icon className="w-4 h-4" style={{ color: POI_COLORS[selectedPOI.type] }} />;
+                })()}
+                <span className="font-semibold text-sm">
+                  {selectedPOI.name || (
+                    selectedPOI.type === 'bus_stop' ? 'Ponto de Ônibus' :
+                    selectedPOI.type === 'park' ? 'Parque' :
+                    selectedPOI.type === 'hospital' ? 'Hospital' :
+                    selectedPOI.type === 'police' ? 'Polícia' : 'Local'
+                  )}
+                </span>
+              </div>
+              {selectedPOI.name && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {selectedPOI.type === 'bus_stop' ? 'Ponto de Ônibus' :
+                   selectedPOI.type === 'park' ? 'Parque' :
+                   selectedPOI.type === 'hospital' ? 'Hospital' :
+                   selectedPOI.type === 'police' ? 'Polícia' : 'Local'}
+                </p>
+              )}
+            </div>
+          </Popup>
+        )}
         
         {destinationMarker && (
           <Marker
