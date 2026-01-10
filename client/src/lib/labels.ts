@@ -68,7 +68,7 @@ export const labels = {
       desktop: "Assédio ou Intimidação"
     },
     iluminacao_precaria: {
-      mobile: "Iluminação",
+      mobile: "Iluminação Precária",
       desktop: "Iluminação Precária"
     },
     deserto: {
