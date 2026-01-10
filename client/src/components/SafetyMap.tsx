@@ -437,22 +437,37 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
       // Começa de longe e descentralizado (ex: Brasília ou visão geral do Brasil)
       map.setView([-15.7801, -47.9292], 4, { animate: false });
       
+      // Força recarga dos tiles imediatamente
+      map.invalidateSize();
+      
       // Solicita localização imediatamente de forma mais assertiva
       map.locate({ setView: false, maxZoom: 18, enableHighAccuracy: true });
 
       // Timer para iniciar a animação de aproximação
       const timer = setTimeout(() => {
-        if (userPosition) {
-          map.flyTo([userPosition.lat, userPosition.lng], 16, {
+        const flyToPosition = (lat: number, lng: number) => {
+          map.flyTo([lat, lng], 16, {
             duration: 3,
             easeLinearity: 0.25
           });
+          
+          // Força recarga dos tiles após a animação terminar
+          setTimeout(() => {
+            map.invalidateSize();
+          }, 3200);
+        };
+
+        if (userPosition) {
+          flyToPosition(userPosition.lat, userPosition.lng);
           setIsInitialAnimation(false);
         } else {
-          // Se ainda não tiver localização, tenta localizar novamente e espera um pouco mais
-          map.locate({ setView: true, maxZoom: 16, enableHighAccuracy: true });
-          // Marcamos como false para não repetir o loop do flyTo, 
-          // mas o locate com setView: true fará o trabalho de centralizar
+          // Se ainda não tiver localização, escuta o evento locationfound
+          const onLocationFound = (e: L.LocationEvent) => {
+            flyToPosition(e.latlng.lat, e.latlng.lng);
+            map.off('locationfound', onLocationFound);
+          };
+          map.on('locationfound', onLocationFound);
+          map.locate({ setView: false, maxZoom: 16, enableHighAccuracy: true });
           setIsInitialAnimation(false);
         }
       }, 1500);
