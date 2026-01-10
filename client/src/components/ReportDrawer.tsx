@@ -232,13 +232,15 @@ export function ReportDrawer({ isOpen, onClose, location }: ReportDrawerProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[500px] max-h-[85vh] flex flex-col overflow-hidden">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Relatar Incidente</DialogTitle>
           <DialogDescription>Ajude outras pessoas a ficarem seguras compartilhando detalhes.</DialogDescription>
         </DialogHeader>
-        {formContent}
-        <DialogFooter>
+        <div className="flex-1 overflow-y-auto min-h-0">
+          {formContent}
+        </div>
+        <DialogFooter className="flex-shrink-0 pt-4">
           {submitButton}
         </DialogFooter>
       </DialogContent>
