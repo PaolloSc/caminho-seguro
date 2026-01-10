@@ -210,37 +210,6 @@ function POILayer({ showPOIs }: { showPOIs: boolean }) {
   );
 }
 
-// Botão de toggle para POIs
-function POIToggleButton({ showPOIs, onToggle }: { showPOIs: boolean; onToggle: () => void }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  
-  useEffect(() => {
-    if (containerRef.current) {
-      L.DomEvent.disableClickPropagation(containerRef.current);
-      L.DomEvent.disableScrollPropagation(containerRef.current);
-    }
-  }, []);
-  
-  return (
-    <div 
-      ref={containerRef}
-      className="absolute top-20 right-4 z-[1000]"
-    >
-      <button
-        onClick={onToggle}
-        className={`w-10 h-10 rounded-full shadow-lg flex items-center justify-center border transition-all
-          ${showPOIs 
-            ? 'bg-blue-600 border-blue-400 text-white' 
-            : 'bg-gray-900/90 border-gray-700 text-white hover:bg-gray-800'
-          }`}
-        title={showPOIs ? "Ocultar pontos de interesse" : "Mostrar pontos de interesse"}
-        data-testid="button-toggle-pois"
-      >
-        <Bus className="w-5 h-5" />
-      </button>
-    </div>
-  );
-}
 
 // Fix for default markers
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -559,7 +528,6 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
   const [mapCenter, setMapCenter] = useState<[number, number]>([-23.5505, -46.6333]); // Default SP
   const [userPosition, setUserPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [isNavigationMode, setIsNavigationMode] = useState(false);
-  const [showPOIs, setShowPOIs] = useState(true);
   const mapRef = useRef<L.Map | null>(null);
   
   const handleFlag = (reportId: number) => {
@@ -611,8 +579,7 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
           onToggleNavigation={(granted) => setIsNavigationMode(!isNavigationMode)}
         />
         
-        <POILayer showPOIs={showPOIs} />
-        <POIToggleButton showPOIs={showPOIs} onToggle={() => setShowPOIs(!showPOIs)} />
+        <POILayer showPOIs={true} />
         
         <MapEvents onMapClick={onAddReport} />
 
