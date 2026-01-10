@@ -1,20 +1,27 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, Polyline, CircleMarker } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import "leaflet.heat";
 import { Report } from "@shared/schema";
 import { format } from "date-fns";
-import { Shield, AlertTriangle, Lightbulb, Ghost, HelpCircle, MapPin, ThumbsUp, ThumbsDown, Flag, Navigation, X, Search, Loader2, Bus, TreePine, Building2, Siren } from "lucide-react";
+import { Shield, AlertTriangle, Lightbulb, Ghost, HelpCircle, MapPin, ThumbsUp, ThumbsDown, Flag, Bus, TreePine, Building2, Siren, Layers, Navigation2, Search, Loader2 } from "lucide-react";
 import { Button } from "./ui/button-custom";
 import { useAuth } from "@/hooks/use-auth";
 import { useVerifyReport, useDownvoteReport, useFlagReport } from "@/hooks/use-reports";
 import { useToast } from "@/hooks/use-toast";
-import { renderToStaticMarkup } from "react-dom/server";
 
-// Leaflet fix for default icon
-delete (L.Icon.Default.prototype as any)._getIconUrl;
+// Fix Leaflet marker icons
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
+
+// @ts-ignore
+delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
 });
 
 interface POI {
@@ -28,20 +35,15 @@ interface POI {
 const poiCache = new Map<string, { pois: POI[], timestamp: number }>();
 const CACHE_DURATION = 5 * 60 * 1000;
 
-async function fetchPOIs(bounds: L.LatLngBounds): Promise<POI[]> {
-  const south = bounds.getSouth();
-  const west = bounds.getWest();
-  const north = bounds.getNorth();
-  const east = bounds.getEast();
-  
-  const cacheKey = `${south.toFixed(3)},${west.toFixed(3)},${north.toFixed(3)},${east.toFixed(3)}`;
+async function fetchPOIs(bounds: { north: number; south: number; east: number; west: number }): Promise<POI[]> {
+  const cacheKey = `${bounds.south.toFixed(3)},${bounds.west.toFixed(3)},${bounds.north.toFixed(3)},${bounds.east.toFixed(3)}`;
   
   const cached = poiCache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
     return cached.pois;
   }
   
-  const bbox = `${south},${west},${north},${east}`;
+  const bbox = `${bounds.south},${bounds.west},${bounds.north},${bounds.east}`;
   
   const query = `
     [out:json][timeout:10];
@@ -156,11 +158,6 @@ async function geocodeAddress(query: string): Promise<{ lat: number; lng: number
   }
 }
 
-const TILE_LAYERS = {
-  day: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-  night: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-};
-
 const REPORT_COLORS: Record<string, string> = {
   assedio: '#ef4444',
   iluminacao_precaria: '#eab308',
@@ -195,12 +192,56 @@ function getPOIIcon(type: POI['type']) {
   }
 }
 
-// Custom hook to handle map events
-function MapEvents({ onMoveEnd, onClick }: { onMoveEnd: () => void, onClick: (e: L.LeafletMouseEvent) => void }) {
+// Map Component Helpers
+function MapEvents({ onMove, onClick }: { onMove: () => void, onClick: (e: any) => void }) {
   useMapEvents({
-    moveend: onMoveEnd,
+    moveend: onMove,
     click: onClick,
   });
+  return null;
+}
+
+function HeatmapLayer({ reports, visible }: { reports: Report[], visible: boolean }) {
+  const map = useMap();
+  const heatmapLayerRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (!visible) {
+      if (heatmapLayerRef.current) {
+        map.removeLayer(heatmapLayerRef.current);
+        heatmapLayerRef.current = null;
+      }
+      return;
+    }
+
+    const points = reports.map(r => {
+      const intensity = r.type === 'abrigo_seguro' ? 0.2 : 
+                        r.type === 'assedio' ? (r.severity || 3) / 3 : 
+                        (r.severity || 3) / 5;
+      return [r.lat, r.lng, intensity];
+    });
+
+    // @ts-ignore
+    heatmapLayerRef.current = L.heatLayer(points, {
+      radius: 25,
+      blur: 15,
+      maxZoom: 17,
+      gradient: {
+        0.2: 'rgba(34, 197, 94, 0.4)',
+        0.4: 'rgba(234, 179, 8, 0.6)',
+        0.6: 'rgba(249, 115, 22, 0.8)',
+        0.8: 'rgba(239, 68, 68, 0.9)',
+        1.0: 'rgba(153, 27, 27, 1)'
+      }
+    }).addTo(map);
+
+    return () => {
+      if (heatmapLayerRef.current) {
+        map.removeLayer(heatmapLayerRef.current);
+      }
+    };
+  }, [reports, visible, map]);
+
   return null;
 }
 
@@ -219,11 +260,11 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
   const { mutate: downvoteReport, isPending: isDownvoting } = useDownvoteReport();
   const { mutate: flagReport, isPending: isFlagging } = useFlagReport();
   
-  const mapRef = useRef<L.Map>(null);
-  
+  const [map, setMap] = useState<L.Map | null>(null);
   const [userPosition, setUserPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [selectedPOI, setSelectedPOI] = useState<POI | null>(null);
+  const [showHeatmap, setShowHeatmap] = useState(true);
   const [showPOIs, setShowPOIs] = useState(true);
   const [pois, setPois] = useState<POI[]>([]);
   
@@ -234,10 +275,36 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
   const [routeSafety, setRouteSafety] = useState<{ score: number; nearbyDangers: number; totalSeverity: number } | null>(null);
   const [destinationMarker, setDestinationMarker] = useState<[number, number] | null>(null);
 
-  const handleFlag = (reportId: number) => {
-    if (!user) return;
-    flagReport({ reportId, reason: 'falso' });
+  const refreshPOIs = useCallback(() => {
+    if (!showPOIs || !map) return;
+    
+    const bounds = map.getBounds();
+    fetchPOIs({
+      north: bounds.getNorth(),
+      south: bounds.getSouth(),
+      east: bounds.getEast(),
+      west: bounds.getWest()
+    }).then(setPois);
+  }, [showPOIs, map]);
+
+  const handleMapClick = useCallback((e: any) => {
+    setSelectedReport(null);
+    setSelectedPOI(null);
+    onAddReport(e.latlng.lat, e.latlng.lng);
+  }, [onAddReport]);
+
+  const handleGeolocate = () => {
+    if (!map) return;
+    map.locate({ setView: true, maxZoom: 17 });
   };
+
+  useEffect(() => {
+    if (map) {
+      map.on('locationfound', (e) => {
+        setUserPosition({ lat: e.latlng.lat, lng: e.latlng.lng });
+      });
+    }
+  }, [map]);
 
   const handleSearchRoute = async () => {
     if (!userPosition || !destinationQuery.trim()) return;
@@ -254,7 +321,6 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
           description: "Não foi possível encontrar o endereço. Tente ser mais específica.",
           variant: "destructive"
         });
-        setIsSearchingRoute(false);
         return;
       }
       
@@ -271,7 +337,6 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
           description: "Não foi possível calcular uma rota para este destino.",
           variant: "destructive"
         });
-        setIsSearchingRoute(false);
         return;
       }
       
@@ -279,9 +344,8 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
       const safety = calculateRouteSafety(route, reports);
       setRouteSafety(safety);
       
-      if (mapRef.current && route.length > 0) {
-        const bounds = L.latLngBounds(route);
-        mapRef.current.fitBounds(bounds, { padding: [50, 50] });
+      if (map && route.length > 0) {
+        map.fitBounds(L.polyline(route).getBounds(), { padding: [50, 50] });
       }
     } catch (error) {
       console.error('Erro ao buscar rota:', error);
@@ -295,282 +359,67 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
     }
   };
 
-  const clearRoute = () => {
-    setRouteCoords(null);
-    setRouteSafety(null);
-    setDestinationMarker(null);
-    setDestinationQuery('');
-    setShowRoutePlanner(false);
-  };
-
-  const handleMapClick = useCallback((e: L.LeafletMouseEvent) => {
-    setSelectedReport(null);
-    setSelectedPOI(null);
-    onAddReport(e.latlng.lat, e.latlng.lng);
-  }, [onAddReport]);
-
-  const refreshPOIs = useCallback(() => {
-    if (!showPOIs || !mapRef.current) return;
-    
-    const bounds = mapRef.current.getBounds();
-    fetchPOIs(bounds).then(setPois);
-  }, [showPOIs]);
-
-  const handleMoveEnd = useCallback(() => {
-    if (showPOIs) {
-      refreshPOIs();
-    }
-  }, [showPOIs, refreshPOIs]);
-
-  useEffect(() => {
-    if (mapRef.current) {
-      mapRef.current.locate({ setView: true, maxZoom: 16 });
-      mapRef.current.on('locationfound', (e) => {
-        setUserPosition({ lat: e.latlng.lat, lng: e.latlng.lng });
-      });
-    }
-  }, []);
-
-  const createReportIcon = (report: Report) => {
-    const Icon = getReportIcon(report.type);
-    const color = REPORT_COLORS[report.type] || '#6b7280';
-    
+  const createCustomIcon = (Icon: any, color: string, size: number = 36) => {
     return L.divIcon({
-      className: 'custom-marker-icon',
-      html: renderToStaticMarkup(
-        <div 
-          className="cursor-pointer transition-transform hover:scale-110"
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: '50%',
-            backgroundColor: color,
-            border: '3px solid white',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        >
-          <Icon className="w-4 h-4 text-white" />
+      html: `
+        <div style="
+          width: ${size}px;
+          height: ${size}px;
+          border-radius: 50%;
+          background-color: ${color};
+          border: ${size > 30 ? '3px' : '2px'} solid white;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+        ">
+          <svg width="${size * 0.5}" height="${size * 0.5}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            ${Icon.render().props.children}
+          </svg>
         </div>
-      ),
-      iconSize: [36, 36],
-      iconAnchor: [18, 18],
+      `,
+      className: '',
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2],
+      popupAnchor: [0, -size / 2]
     });
   };
-
-  const createPOIIcon = (poi: POI) => {
-    const Icon = getPOIIcon(poi.type);
-    const color = POI_COLORS[poi.type];
-    
-    return L.divIcon({
-      className: 'custom-marker-icon',
-      html: renderToStaticMarkup(
-        <div
-          className="cursor-pointer transition-transform hover:scale-110"
-          style={{
-            width: 24,
-            height: 24,
-            borderRadius: '50%',
-            backgroundColor: color,
-            border: '2px solid white',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        >
-          <Icon className="w-3 h-3 text-white" />
-        </div>
-      ),
-      iconSize: [24, 24],
-      iconAnchor: [12, 12],
-    });
-  };
-
-  const tileUrl = isNightMode ? TILE_LAYERS.night : TILE_LAYERS.day;
 
   return (
-    <div className={`relative w-full h-full ${className}`}>
+    <div className={`relative w-full h-full overflow-hidden ${className}`}>
       <MapContainer
         center={[-19.8095, -43.9345]}
         zoom={16}
+        scrollWheelZoom={true}
         className="w-full h-full"
-        ref={mapRef as any}
+        ref={setMap}
         zoomControl={false}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url={tileUrl}
+          url={isNightMode 
+            ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          }
         />
         
-        <MapEvents onMoveEnd={handleMoveEnd} onClick={handleMapClick} />
-        
-        {/* Reports markers */}
-        {reports.map(report => (
-          <Marker
-            key={report.id}
-            position={[report.lat, report.lng]}
-            icon={createReportIcon(report)}
-            eventHandlers={{
-              click: (e) => {
-                L.DomEvent.stopPropagation(e);
-                setSelectedReport(report);
-                setSelectedPOI(null);
-              }
-            }}
-          >
-            {selectedReport?.id === report.id && (
-              <Popup offset={[0, -10]} className="safety-popup">
-                <div className="p-2 min-w-[220px]">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className={`px-2 py-1 rounded-md text-xs font-bold uppercase text-white
-                      ${selectedReport.type === 'assedio' ? 'bg-destructive' : 
-                        selectedReport.type === 'abrigo_seguro' ? 'bg-[hsl(var(--safe))]' :
-                        selectedReport.type === 'iluminacao_precaria' ? 'bg-[hsl(var(--warning))]' : 'bg-gray-500'}`
-                    }>
-                      {selectedReport.type.replace('_', ' ')}
-                    </span>
-                    <span className="text-xs text-muted-foreground ml-auto">
-                      {format(new Date(selectedReport.createdAt!), 'd MMM, HH:mm')}
-                    </span>
-                  </div>
-                  
-                  <p className="text-sm font-medium mb-3 line-clamp-3">{selectedReport.description}</p>
-                  
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1 text-[hsl(var(--safe))]">
-                        <ThumbsUp className="w-3 h-3" />
-                        {selectedReport.verifiedCount}
-                      </span>
-                      <span className="flex items-center gap-1 text-destructive">
-                        <ThumbsDown className="w-3 h-3" />
-                        {selectedReport.downvoteCount || 0}
-                      </span>
-                    </div>
-                    
-                    <div className="flex gap-1">
-                      <Button 
-                        size="icon" 
-                        variant="ghost" 
-                        className="h-7 w-7"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          verifyReport(selectedReport.id);
-                        }}
-                        disabled={isVerifying || !user}
-                        title="Confirmar precisão"
-                      >
-                        <ThumbsUp className="w-3 h-3" />
-                      </Button>
-                      <Button 
-                        size="icon" 
-                        variant="ghost" 
-                        className="h-7 w-7"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          downvoteReport(selectedReport.id);
-                        }}
-                        disabled={isDownvoting || !user}
-                        title="Não é mais preciso"
-                      >
-                        <ThumbsDown className="w-3 h-3" />
-                      </Button>
-                      <Button 
-                        size="icon" 
-                        variant="ghost" 
-                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleFlag(selectedReport.id);
-                        }}
-                        disabled={isFlagging || !user}
-                        title="Denunciar relato falso"
-                      >
-                        <Flag className="w-3 h-3" />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="primary" 
-                        className="h-7 px-2 text-xs"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onViewReport(selectedReport.id);
-                        }}
-                      >
-                        Detalhes
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </Popup>
-            )}
-          </Marker>
-        ))}
-        
-        {/* POIs markers */}
-        {showPOIs && pois.map(poi => (
-          <Marker
-            key={poi.id}
-            position={[poi.lat, poi.lng]}
-            icon={createPOIIcon(poi)}
-            eventHandlers={{
-              click: (e) => {
-                L.DomEvent.stopPropagation(e);
-                setSelectedPOI(poi);
-                setSelectedReport(null);
-              }
-            }}
-          >
-            {selectedPOI?.id === poi.id && (
-              <Popup offset={[0, -5]} className="poi-popup">
-                <div className="p-2 min-w-[150px]">
-                  <div className="flex items-center gap-2">
-                    {(() => {
-                      const Icon = getPOIIcon(selectedPOI.type);
-                      return <Icon className="w-4 h-4" style={{ color: POI_COLORS[selectedPOI.type] }} />;
-                    })()}
-                    <span className="font-semibold text-sm">
-                      {selectedPOI.name || (
-                        selectedPOI.type === 'bus_stop' ? 'Ponto de Ônibus' :
-                        selectedPOI.type === 'park' ? 'Parque' :
-                        selectedPOI.type === 'hospital' ? 'Hospital' :
-                        selectedPOI.type === 'police' ? 'Polícia' : 'Local'
-                      )}
-                    </span>
-                  </div>
-                  {selectedPOI.name && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {selectedPOI.type === 'bus_stop' ? 'Ponto de Ônibus' :
-                       selectedPOI.type === 'park' ? 'Parque' :
-                       selectedPOI.type === 'hospital' ? 'Hospital' :
-                       selectedPOI.type === 'police' ? 'Polícia' : 'Local'}
-                    </p>
-                  )}
-                </div>
-              </Popup>
-            )}
-          </Marker>
-        ))}
-        
-        {/* User position */}
+        <MapEvents onMove={refreshPOIs} onClick={handleMapClick} />
+        <HeatmapLayer reports={reports} visible={showHeatmap} />
+
+        {/* User Location Marker */}
         {userPosition && (
-          <CircleMarker
-            center={[userPosition.lat, userPosition.lng]}
-            radius={8}
-            pathOptions={{
-              fillColor: 'hsl(var(--primary))',
-              fillOpacity: 1,
-              color: 'white',
-              weight: 2
-            }}
-            className="user-location-marker"
+          <Marker 
+            position={[userPosition.lat, userPosition.lng]}
+            icon={L.divIcon({
+              html: `<div class="w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-lg animate-pulse"></div>`,
+              className: '',
+              iconSize: [16, 16]
+            })}
           />
         )}
-        
-        {/* Route visualization */}
+
+        {/* Route Visualization */}
         {routeCoords && (
           <Polyline
             positions={routeCoords}
@@ -582,159 +431,158 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
             }}
           />
         )}
-        
-        {/* Destination marker */}
-        {destinationMarker && (
-          <Marker
-            position={destinationMarker}
-            icon={L.divIcon({
-              className: 'custom-marker-icon',
-              html: renderToStaticMarkup(
-                <div
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: '50%',
-                    backgroundColor: '#3b82f6',
-                    border: '3px solid white',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
-                  <MapPin className="w-4 h-4 text-white" />
+
+        {/* Danger Reports Markers */}
+        {reports.map(report => {
+          const Icon = getReportIcon(report.type);
+          const color = REPORT_COLORS[report.type] || '#6b7280';
+          
+          return (
+            <Marker
+              key={report.id}
+              position={[report.lat, report.lng]}
+              icon={createCustomIcon(Icon, color)}
+              eventHandlers={{
+                click: () => setSelectedReport(report)
+              }}
+            >
+              <Popup className="safety-popup">
+                <div className="p-2 min-w-[220px]">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className={`px-2 py-1 rounded-md text-xs font-bold uppercase text-white
+                      ${report.type === 'assedio' ? 'bg-destructive' : 
+                        report.type === 'abrigo_seguro' ? 'bg-[hsl(var(--safe))]' :
+                        report.type === 'iluminacao_precaria' ? 'bg-[hsl(var(--warning))]' : 'bg-gray-500'}`
+                    }>
+                      {report.type.replace('_', ' ')}
+                    </span>
+                    <span className="text-xs text-muted-foreground ml-auto">
+                      {format(new Date(report.createdAt!), 'd MMM, HH:mm')}
+                    </span>
+                  </div>
+                  <p className="text-sm font-medium mb-3 line-clamp-3">{report.description}</p>
+                  <Button 
+                    size="sm" 
+                    variant="primary" 
+                    className="w-full h-8 text-xs"
+                    onClick={() => onViewReport(report.id)}
+                  >
+                    Ver Detalhes
+                  </Button>
                 </div>
-              ),
-              iconSize: [32, 32],
-              iconAnchor: [16, 32],
-            })}
+              </Popup>
+            </Marker>
+          );
+        })}
+
+        {/* POI Markers */}
+        {showPOIs && pois.map(poi => {
+          const Icon = getPOIIcon(poi.type);
+          const color = POI_COLORS[poi.type];
+          
+          return (
+            <Marker
+              key={poi.id}
+              position={[poi.lat, poi.lng]}
+              icon={createCustomIcon(Icon, color, 24)}
+              eventHandlers={{
+                click: () => setSelectedPOI(poi)
+              }}
+            >
+              <Popup className="poi-popup">
+                <div className="p-2 min-w-[150px]">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-sm">
+                      {poi.name || (
+                        poi.type === 'bus_stop' ? 'Ponto de Ônibus' :
+                        poi.type === 'park' ? 'Parque' :
+                        poi.type === 'hospital' ? 'Hospital' :
+                        poi.type === 'police' ? 'Polícia' : 'Local'
+                      )}
+                    </span>
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
+
+        {/* Destination Marker */}
+        {destinationMarker && (
+          <Marker 
+            position={destinationMarker}
+            icon={createCustomIcon(MapPin, '#3b82f6')}
           />
         )}
       </MapContainer>
 
-      {/* Interface Controls */}
-      <div className="absolute top-4 left-4 right-4 z-[1000] pointer-events-none">
-        {!showRoutePlanner ? (
-          <div className="flex gap-2 justify-between">
-            <Button
-              variant="outline"
-              className="pointer-events-auto bg-background/80 backdrop-blur-md shadow-lg rounded-full px-4 h-11"
-              onClick={() => setShowRoutePlanner(true)}
-              data-testid="button-open-route-planner"
-            >
-              <Navigation className="w-4 h-4 mr-2 text-primary" />
-              Para onde vamos?
-            </Button>
-            
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                className={`pointer-events-auto shadow-lg rounded-full h-11 w-11 ${showPOIs ? 'bg-primary text-white border-primary' : 'bg-background/80 backdrop-blur-md'}`}
-                onClick={() => setShowPOIs(!showPOIs)}
-                title={showPOIs ? "Esconder locais úteis" : "Mostrar locais úteis"}
-              >
-                <Building2 className="w-5 h-5" />
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="bg-background/95 backdrop-blur-md p-3 rounded-2xl shadow-xl pointer-events-auto border animate-in slide-in-from-top-4 duration-300 max-w-md mx-auto w-full">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="Destino (ex: Rua da Bahia, BH)"
-                  className="w-full bg-muted/50 border-none rounded-xl py-2 pl-9 pr-4 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-                  value={destinationQuery}
-                  onChange={(e) => setDestinationQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearchRoute()}
-                  autoFocus
-                />
-              </div>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="rounded-full h-8 w-8"
-                onClick={clearRoute}
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-            
-            {!routeCoords ? (
-              <Button
-                className="w-full rounded-xl"
-                onClick={handleSearchRoute}
-                disabled={isSearchingRoute || !destinationQuery.trim()}
-              >
-                {isSearchingRoute ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Calculando...
-                  </>
-                ) : (
-                  <>
-                    <Navigation className="w-4 h-4 mr-2" />
-                    Traçar Rota Segura
-                  </>
-                )}
-              </Button>
-            ) : routeSafety && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl border border-border/50">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center border-4 ${
-                      routeSafety.score >= 70 ? 'border-green-500/20 text-green-600' : 
-                      routeSafety.score >= 40 ? 'border-yellow-500/20 text-yellow-600' : 'border-red-500/20 text-red-600'
-                    }`}>
-                      <span className="text-lg font-bold">{routeSafety.score}</span>
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Índice de Segurança</p>
-                      <p className="text-sm font-medium">
-                        {routeSafety.score >= 70 ? 'Caminho seguro recomendado' : 
-                         routeSafety.score >= 40 ? 'Atenção redobrada no trajeto' : 'Trajeto com alto risco'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="p-2 bg-muted/20 rounded-lg text-center">
-                    <p className="text-[10px] uppercase font-bold text-muted-foreground">Alertas Próximos</p>
-                    <p className="text-sm font-semibold">{routeSafety.nearbyDangers}</p>
-                  </div>
-                  <Button
-                    variant="outline"
-                    className="rounded-lg h-auto py-2"
-                    onClick={clearRoute}
-                  >
-                    Novo Destino
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+      {/* Floating Controls */}
+      <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-2">
+        <Button 
+          variant="outline" 
+          size="icon" 
+          className="bg-background shadow-md hover-elevate"
+          onClick={() => setShowHeatmap(!showHeatmap)}
+          title={showHeatmap ? "Ocultar Mapa de Calor" : "Mostrar Mapa de Calor"}
+        >
+          <Layers className={`h-4 w-4 ${showHeatmap ? 'text-primary' : 'text-muted-foreground'}`} />
+        </Button>
+        <Button 
+          variant="outline" 
+          size="icon" 
+          className="bg-background shadow-md hover-elevate"
+          onClick={handleGeolocate}
+          title="Minha Localização"
+        >
+          <Navigation2 className="h-4 w-4" />
+        </Button>
       </div>
 
-      <div className="absolute bottom-6 right-4 flex flex-col gap-2 z-[1000]">
-        <Button
-          variant="outline"
-          size="icon"
-          className="bg-background/80 backdrop-blur-md shadow-lg rounded-full h-12 w-12"
-          onClick={() => {
-            if (mapRef.current) {
-              mapRef.current.locate({ setView: true, maxZoom: 17 });
-            }
-          }}
-          data-testid="button-geolocate"
-        >
-          <Navigation className="w-5 h-5 text-primary" />
-        </Button>
+      {/* Route Planner Overlay */}
+      <div className="absolute top-4 left-4 z-[1000] w-full max-w-[320px]">
+        <div className="bg-background/95 backdrop-blur-sm p-3 rounded-lg shadow-xl border border-border">
+          <div className="flex gap-2 mb-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Para onde vamos agora?"
+                className="w-full bg-muted/50 rounded-md py-2 pl-8 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                value={destinationQuery}
+                onChange={(e) => setDestinationQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearchRoute()}
+              />
+            </div>
+            <Button 
+              size="icon" 
+              className="h-9 w-9" 
+              onClick={handleSearchRoute}
+              disabled={isSearchingRoute}
+            >
+              {isSearchingRoute ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+            </Button>
+          </div>
+
+          {routeSafety && (
+            <div className={`mt-3 p-3 rounded-md border ${
+              routeSafety.score >= 70 ? 'bg-green-500/10 border-green-500/20' : 
+              routeSafety.score >= 40 ? 'bg-yellow-500/10 border-yellow-500/20' : 'bg-red-500/10 border-red-500/20'
+            }`}>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-semibold uppercase opacity-70 tracking-wider">Score de Segurança</span>
+                <span className={`text-lg font-bold ${
+                  routeSafety.score >= 70 ? 'text-green-600' : 
+                  routeSafety.score >= 40 ? 'text-yellow-600' : 'text-red-600'
+                }`}>{routeSafety.score}/100</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {routeSafety.nearbyDangers > 0 
+                  ? `${routeSafety.nearbyDangers} alertas próximos encontrados nesta rota.`
+                  : "Nenhum alerta crítico encontrado nesta rota."}
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
