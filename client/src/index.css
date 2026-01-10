@@ -135,17 +135,37 @@
   50% { transform: scale(1.5); opacity: 0.1; }
 }
 
-.user-location-marker::before {
+/* User location marker - does not rotate with map */
+.user-location-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
+.user-marker-dot {
+  width: 20px;
+  height: 20px;
+  background-color: hsl(var(--primary));
+  border: 3px solid white;
+  border-radius: 50%;
+  position: relative;
+}
+
+.user-marker-dot::before {
   content: '';
   position: absolute;
-  left: -10px;
-  top: -10px;
-  width: 40px;
-  height: 40px;
+  left: -8px;
+  top: -8px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   background-color: hsl(var(--primary));
-  opacity: 0.4;
+  opacity: 0.3;
   animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+/* Counter-rotate marker when map rotates */
+.leaflet-rotate .user-location-icon {
+  transform: rotate(calc(-1 * var(--bearing, 0deg))) !important;
 }
 
 /* Waze-style marker animations */

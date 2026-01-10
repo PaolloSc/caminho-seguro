@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline, useMapEvents, CircleMarker } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet.heat";
@@ -276,12 +276,15 @@ function NavigationController({ enabled, onPositionUpdate, getZoomForSpeed, posi
         cancelAnimationFrame(animationRef.current);
         animationRef.current = null;
       }
-      if (map && currentBearingRef.current !== 0) {
+      if (map) {
+        // Always reset bearing and CSS variable when disabled
         // @ts-ignore - leaflet-rotate extends L.Map
-        if (typeof map.setBearing === 'function') {
+        if (typeof map.setBearing === 'function' && currentBearingRef.current !== 0) {
           // @ts-ignore
           map.setBearing(0);
         }
+        // Always reset CSS variable
+        map.getContainer().style.setProperty('--bearing', '0deg');
         currentBearingRef.current = 0;
       }
       return;
@@ -308,6 +311,10 @@ function NavigationController({ enabled, onPositionUpdate, getZoomForSpeed, posi
       if (typeof map.setBearing === 'function') {
         // @ts-ignore
         map.setBearing(currentBearingRef.current);
+        
+        // Set CSS variable for counter-rotation of markers
+        const container = map.getContainer();
+        container.style.setProperty('--bearing', `${currentBearingRef.current}deg`);
       }
 
       map.setView(targetLatLng, targetZoom, { animate: true, duration: 0.5 });
@@ -499,7 +506,6 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
             borderRadius: '50%',
             backgroundColor: color,
             border: '3px solid white',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
@@ -528,7 +534,6 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
             borderRadius: '50%',
             backgroundColor: color,
             border: '2px solid white',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
@@ -575,15 +580,14 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
 
         {/* User Location Marker */}
         {userPosition && (
-          <CircleMarker
-            center={[userPosition.lat, userPosition.lng]}
-            radius={8}
-            pathOptions={{
-              fillColor: 'hsl(var(--primary))',
-              fillOpacity: 1,
-              color: 'white',
-              weight: 2
-            }}
+          <Marker
+            position={[userPosition.lat, userPosition.lng]}
+            icon={L.divIcon({
+              className: 'user-location-icon',
+              html: `<div class="user-marker-dot"></div>`,
+              iconSize: [20, 20],
+              iconAnchor: [10, 10],
+            })}
           />
         )}
 
