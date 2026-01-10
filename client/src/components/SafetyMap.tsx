@@ -305,12 +305,12 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
     
     setUserPosition({ lat, lng });
     
-    // Usar flyTo para aproximar com animação
+    // Usar flyTo para aproximar com animação rápida
     if (mapRef.current) {
       mapRef.current.getMap().flyTo({
         center: [lng, lat],
         zoom: 17,
-        duration: 1500
+        duration: 800
       });
     }
   }, []);
