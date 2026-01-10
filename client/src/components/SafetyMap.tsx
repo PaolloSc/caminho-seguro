@@ -3,13 +3,15 @@ import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline, useMapEvents,
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet.heat";
+import "leaflet-rotate";
 import { Report } from "@shared/schema";
 import { format } from "date-fns";
-import { Shield, AlertTriangle, Lightbulb, Ghost, HelpCircle, MapPin, ThumbsUp, ThumbsDown, Flag, Bus, TreePine, Building2, Siren, Layers, Navigation2, Search, Loader2, Navigation } from "lucide-react";
+import { Shield, AlertTriangle, Lightbulb, Ghost, HelpCircle, MapPin, ThumbsUp, ThumbsDown, Flag, Bus, TreePine, Building2, Siren, Layers, Navigation2, Search, Loader2, Navigation, Compass, X } from "lucide-react";
 import { Button } from "./ui/button-custom";
 import { useAuth } from "@/hooks/use-auth";
 import { useVerifyReport, useDownvoteReport, useFlagReport } from "@/hooks/use-reports";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigationMode } from "@/hooks/use-navigation-mode";
 import { renderToStaticMarkup } from "react-dom/server";
 
 // Fix Leaflet marker icons
@@ -251,6 +253,82 @@ function HeatmapLayer({ reports, visible }: { reports: Report[], visible: boolea
   return null;
 }
 
+interface NavigationControllerProps {
+  enabled: boolean;
+  onPositionUpdate: (lat: number, lng: number) => void;
+  getZoomForSpeed: (speed: number | null) => number;
+  position: {
+    lat: number;
+    lng: number;
+    heading: number | null;
+    speed: number | null;
+  } | null;
+}
+
+function NavigationController({ enabled, onPositionUpdate, getZoomForSpeed, position }: NavigationControllerProps) {
+  const map = useMap();
+  const animationRef = useRef<number | null>(null);
+  const currentBearingRef = useRef<number>(0);
+
+  useEffect(() => {
+    if (!enabled || !position) {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
+      }
+      if (map && currentBearingRef.current !== 0) {
+        // @ts-ignore - leaflet-rotate extends L.Map
+        if (typeof map.setBearing === 'function') {
+          // @ts-ignore
+          map.setBearing(0);
+        }
+        currentBearingRef.current = 0;
+      }
+      return;
+    }
+
+    const targetBearing = position.heading ?? 0;
+    const targetZoom = getZoomForSpeed(position.speed);
+    const targetLatLng = L.latLng(position.lat, position.lng);
+
+    onPositionUpdate(position.lat, position.lng);
+
+    const animate = () => {
+      const diff = targetBearing - currentBearingRef.current;
+      const shortestDiff = ((diff + 540) % 360) - 180;
+      
+      if (Math.abs(shortestDiff) > 0.5) {
+        currentBearingRef.current += shortestDiff * 0.15;
+        currentBearingRef.current = ((currentBearingRef.current % 360) + 360) % 360;
+      } else {
+        currentBearingRef.current = targetBearing;
+      }
+
+      // @ts-ignore - leaflet-rotate extends L.Map
+      if (typeof map.setBearing === 'function') {
+        // @ts-ignore
+        map.setBearing(currentBearingRef.current);
+      }
+
+      map.setView(targetLatLng, targetZoom, { animate: true, duration: 0.5 });
+
+      if (enabled) {
+        animationRef.current = requestAnimationFrame(animate);
+      }
+    };
+
+    animationRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [enabled, position, map, getZoomForSpeed, onPositionUpdate]);
+
+  return null;
+}
+
 interface SafetyMapProps {
   reports: Report[];
   onAddReport: (lat: number, lng: number) => void;
@@ -280,6 +358,22 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
   const [routeCoords, setRouteCoords] = useState<[number, number][] | null>(null);
   const [routeSafety, setRouteSafety] = useState<{ score: number; nearbyDangers: number; totalSeverity: number } | null>(null);
   const [destinationMarker, setDestinationMarker] = useState<[number, number] | null>(null);
+  const [navigationMode, setNavigationMode] = useState(false);
+
+  const { position: navPosition, isTracking, getZoomForSpeed } = useNavigationMode({
+    enabled: navigationMode
+  });
+
+  const handlePositionUpdate = useCallback((lat: number, lng: number) => {
+    setUserPosition({ lat, lng });
+  }, []);
+
+  const toggleNavigationMode = useCallback(() => {
+    setNavigationMode(prev => !prev);
+    if (!navigationMode && !userPosition && map) {
+      map.locate({ setView: true, maxZoom: 18 });
+    }
+  }, [navigationMode, userPosition, map]);
 
   const refreshPOIs = useCallback(() => {
     if (!showPOIs || !map) return;
@@ -427,6 +521,10 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
         className="w-full h-full"
         ref={setMap}
         zoomControl={false}
+        // @ts-ignore - leaflet-rotate options
+        rotate={true}
+        rotateControl={false}
+        touchRotate={true}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -438,6 +536,12 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
         
         <MapEvents onMoveEnd={refreshPOIs} onClick={handleMapClick} />
         <HeatmapLayer reports={reports} visible={showHeatmap} />
+        <NavigationController 
+          enabled={navigationMode}
+          onPositionUpdate={handlePositionUpdate}
+          getZoomForSpeed={getZoomForSpeed}
+          position={navPosition}
+        />
 
         {/* User Location Marker */}
         {userPosition && (
@@ -590,8 +694,19 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
           className="bg-background shadow-md hover-elevate rounded-full h-11 w-11"
           onClick={handleGeolocate}
           title="Minha Localização"
+          data-testid="button-geolocate"
         >
           <Navigation2 className="h-5 w-5" />
+        </Button>
+        <Button 
+          variant="outline" 
+          size="icon" 
+          className={`shadow-md hover-elevate rounded-full h-11 w-11 ${navigationMode ? 'bg-primary text-primary-foreground' : 'bg-background'}`}
+          onClick={toggleNavigationMode}
+          title={navigationMode ? "Desativar Modo Navegação" : "Ativar Modo Navegação (Estilo Waze)"}
+          data-testid="button-navigation-mode"
+        >
+          <Compass className={`h-5 w-5 ${navigationMode ? 'animate-pulse' : ''}`} />
         </Button>
       </div>
 
