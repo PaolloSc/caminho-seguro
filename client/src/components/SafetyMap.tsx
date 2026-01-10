@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, CircleMarker } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -219,8 +219,15 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-// Custom Icons Generator - Waze-style markers
+// Cache de ícones para evitar recriação a cada render
+const iconCache = new Map<string, L.DivIcon>();
+
+// Custom Icons Generator - Waze-style markers (com cache)
 const createIcon = (type: string) => {
+  // Verificar cache primeiro
+  if (iconCache.has(type)) {
+    return iconCache.get(type)!;
+  }
   let iconComponent;
   let bgColor;
   let shadowColor;
@@ -279,13 +286,17 @@ const createIcon = (type: string) => {
     </div>
   );
 
-  return L.divIcon({
+  const icon = L.divIcon({
     html,
     className: 'custom-marker-icon',
     iconSize: [36, 36],
     iconAnchor: [18, 36],
     popupAnchor: [0, -36]
   });
+  
+  // Salvar no cache
+  iconCache.set(type, icon);
+  return icon;
 };
 
 // Component to handle map clicks for adding reports
@@ -587,6 +598,7 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
   const [userPosition, setUserPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [isNavigationMode, setIsNavigationMode] = useState(false);
   const [showHeatmap, setShowHeatmap] = useState(false);
+  const [showPOIs, setShowPOIs] = useState(false); // Desativado por padrão para performance
   const mapRef = useRef<L.Map | null>(null);
   
   const handleFlag = (reportId: number) => {
@@ -632,7 +644,7 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
           onToggleNavigation={(granted) => setIsNavigationMode(!isNavigationMode)}
         />
         
-        <POILayer showPOIs={true} />
+        <POILayer showPOIs={showPOIs} />
         
         <HeatmapLayer reports={reports} showHeatmap={showHeatmap} />
         
@@ -733,8 +745,8 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
         ))}
       </MapContainer>
       
-      {/* Botão do Heatmap - fora do MapContainer */}
-      <div className="absolute top-20 right-4 z-[500]">
+      {/* Botões de camadas - fora do MapContainer */}
+      <div className="absolute top-20 right-4 z-[500] flex flex-col gap-2">
         <button
           onClick={() => setShowHeatmap(!showHeatmap)}
           className={`w-11 h-11 rounded-full shadow-lg flex items-center justify-center border transition-all
@@ -746,6 +758,18 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
           data-testid="button-toggle-heatmap"
         >
           <Flame className="w-5 h-5" />
+        </button>
+        <button
+          onClick={() => setShowPOIs(!showPOIs)}
+          className={`w-11 h-11 rounded-full shadow-lg flex items-center justify-center border transition-all
+            ${showPOIs 
+              ? 'bg-blue-600 border-blue-400 text-white' 
+              : 'bg-card/90 backdrop-blur-md border-border text-foreground hover:bg-card'
+            }`}
+          title={showPOIs ? "Ocultar pontos de interesse" : "Mostrar pontos de interesse (ônibus, hospitais, etc.)"}
+          data-testid="button-toggle-pois"
+        >
+          <MapPin className="w-5 h-5" />
         </button>
       </div>
     </div>
