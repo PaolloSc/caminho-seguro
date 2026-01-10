@@ -65,19 +65,19 @@ export const labels = {
   incidentTypes: {
     assedio: {
       mobile: "Assédio",
-      desktop: "Assédio"
+      desktop: "Assédio ou Intimidação"
     },
     iluminacao_precaria: {
-      mobile: "Luz",
+      mobile: "Iluminação",
       desktop: "Iluminação Precária"
     },
     deserto: {
-      mobile: "Deserto",
-      desktop: "Lugar Deserto"
+      mobile: "Local Ermo",
+      desktop: "Local Deserto ou Isolado"
     },
     abrigo_seguro: {
-      mobile: "Abrigo",
-      desktop: "Abrigo Seguro"
+      mobile: "Refúgio",
+      desktop: "Ponto de Abrigo Seguro"
     }
   },
   
