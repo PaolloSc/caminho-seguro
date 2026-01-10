@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import "leaflet-rotate";
 import { Report } from "@shared/schema";
 import { format } from "date-fns";
 import { Shield, AlertTriangle, Lightbulb, Ghost, HelpCircle, MapPin, ThumbsUp, ThumbsDown, MessageCircle, Flag } from "lucide-react";
@@ -225,6 +226,12 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
         zoom={13} 
         className="w-full h-full z-0"
         zoomControl={false}
+        {...{
+          rotate: true,
+          touchRotate: true,
+          shiftKeyRotate: true,
+          bearing: 0
+        } as any}
       >
         <TileLayer
           key={isNightMode ? 'night' : 'day'}
