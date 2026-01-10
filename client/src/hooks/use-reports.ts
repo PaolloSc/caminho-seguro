@@ -109,6 +109,43 @@ export function useVerifyReport() {
   });
 }
 
+export function useDownvoteReport() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const url = buildUrl(api.reports.downvote.path, { id });
+      const res = await fetch(url, {
+        method: api.reports.downvote.method,
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        if (res.status === 401) throw new Error("Faça login para votar.");
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || "Erro ao votar");
+      }
+      return api.reports.downvote.responses[200].parse(await res.json());
+    },
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: [api.reports.list.path] });
+      queryClient.invalidateQueries({ queryKey: [api.reports.get.path, id] });
+      toast({
+        title: "Voto registrado",
+        description: "Você indicou que este relato não é mais preciso.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+}
+
 export function useFlagReport() {
   const { toast } = useToast();
 

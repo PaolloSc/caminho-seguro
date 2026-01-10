@@ -52,6 +52,7 @@ export const insertReportSchema = createInsertSchema(reports).omit({
   id: true, 
   userId: true, 
   verifiedCount: true, 
+  downvoteCount: true,
   createdAt: true 
 });
 

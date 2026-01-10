@@ -4,11 +4,11 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Report } from "@shared/schema";
 import { format } from "date-fns";
-import { Shield, AlertTriangle, Lightbulb, Ghost, HelpCircle, MapPin, ThumbsUp, MessageCircle, Flag } from "lucide-react";
+import { Shield, AlertTriangle, Lightbulb, Ghost, HelpCircle, MapPin, ThumbsUp, ThumbsDown, MessageCircle, Flag } from "lucide-react";
 import { renderToString } from "react-dom/server";
 import { Button } from "./ui/button-custom";
 import { useAuth } from "@/hooks/use-auth";
-import { useVerifyReport, useFlagReport } from "@/hooks/use-reports";
+import { useVerifyReport, useDownvoteReport, useFlagReport } from "@/hooks/use-reports";
 
 // Fix for default markers
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -109,6 +109,7 @@ interface SafetyMapProps {
 export function SafetyMap({ reports, onAddReport, onViewReport, className }: SafetyMapProps) {
   const { user } = useAuth();
   const { mutate: verifyReport, isPending: isVerifying } = useVerifyReport();
+  const { mutate: downvoteReport, isPending: isDownvoting } = useDownvoteReport();
   const { mutate: flagReport, isPending: isFlagging } = useFlagReport();
   const [mapCenter, setMapCenter] = useState<[number, number]>([-23.5505, -46.6333]); // Default SP
   
@@ -158,29 +159,50 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className }: Saf
                 <p className="text-sm font-medium mb-3 line-clamp-3">{report.description}</p>
                 
                 <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <ThumbsUp className="w-3 h-3" />
-                    <span>{report.verifiedCount} verificações</span>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1 text-[hsl(var(--safe))]">
+                      <ThumbsUp className="w-3 h-3" />
+                      {report.verifiedCount}
+                    </span>
+                    <span className="flex items-center gap-1 text-destructive">
+                      <ThumbsDown className="w-3 h-3" />
+                      {report.downvoteCount || 0}
+                    </span>
                   </div>
                   
-                  <div className="flex gap-2">
+                  <div className="flex gap-1">
                     <Button 
-                      size="sm" 
+                      size="icon" 
                       variant="ghost" 
-                      className="h-8 w-8 p-0"
+                      className="h-8 w-8"
                       onClick={(e) => {
                         e.stopPropagation();
                         verifyReport(report.id);
                       }}
-                      disabled={isVerifying}
+                      disabled={isVerifying || !user}
+                      title="Confirmar precisão"
                       data-testid={`button-verify-${report.id}`}
                     >
                       <ThumbsUp className="w-4 h-4" />
                     </Button>
                     <Button 
-                      size="sm" 
+                      size="icon" 
                       variant="ghost" 
-                      className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                      className="h-8 w-8"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        downvoteReport(report.id);
+                      }}
+                      disabled={isDownvoting || !user}
+                      title="Não é mais preciso"
+                      data-testid={`button-downvote-${report.id}`}
+                    >
+                      <ThumbsDown className="w-4 h-4" />
+                    </Button>
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleFlag(report.id);
