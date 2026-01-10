@@ -1,0 +1,27 @@
+{
+  "name": "CaminhoSeguro",
+  "short_name": "CaminhoSeguro",
+  "description": "Mapeamento colaborativo de segurança para mulheres. Relatar incidentes, verificar locais e caminhar com mais segurança.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#7c3aed",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "pt-BR",
+  "categories": ["navigation", "safety", "social"],
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
