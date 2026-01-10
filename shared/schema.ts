@@ -15,6 +15,7 @@ export const reports = pgTable("reports", {
   lat: real("lat").notNull(),
   lng: real("lng").notNull(),
   verifiedCount: integer("verified_count").default(0),
+  downvoteCount: integer("downvote_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -40,6 +41,7 @@ export const reportVerifications = pgTable("report_verifications", {
   id: serial("id").primaryKey(),
   reportId: integer("report_id").notNull(),
   userId: varchar("user_id").notNull(),
+  voteType: text("vote_type").default("up").notNull(), // 'up' or 'down'
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => ({
   uniqueUserReport: uniqueIndex("unique_user_report_verification").on(table.userId, table.reportId),

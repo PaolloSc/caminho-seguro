@@ -53,6 +53,15 @@ export const api = {
         404: errorSchemas.notFound,
       },
     },
+    downvote: {
+      method: 'POST' as const,
+      path: '/api/reports/:id/downvote',
+      responses: {
+        200: z.custom<typeof reports.$inferSelect>(), // Returns updated report
+        401: errorSchemas.unauthorized,
+        404: errorSchemas.notFound,
+      },
+    },
   },
   comments: {
     create: {

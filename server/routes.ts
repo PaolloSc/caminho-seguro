@@ -152,18 +152,27 @@ export async function registerRoutes(
     });
   });
 
-  // Verificar relatório (com proteção contra duplicatas)
+  // Verificar relatório (upvote)
   app.post(api.reports.verify.path, isAuthenticated, verifyLimiter, async (req, res) => {
     const user = req.user as any;
     const reportId = Number(req.params.id);
     
-    // Verifica se já verificou
-    const alreadyVerified = await storage.hasUserVerified(reportId, user.claims.sub);
-    if (alreadyVerified) {
-      return res.status(400).json({ message: 'Você já verificou este relatório' });
-    }
-    
     const report = await storage.verifyReport(reportId, user.claims.sub);
+    if (!report) {
+      return res.status(404).json({ message: 'Relatório não encontrado' });
+    }
+    res.json({
+      ...report,
+      userId: undefined,
+    });
+  });
+
+  // Downvote relatório
+  app.post(api.reports.downvote.path, isAuthenticated, verifyLimiter, async (req, res) => {
+    const user = req.user as any;
+    const reportId = Number(req.params.id);
+    
+    const report = await storage.downvoteReport(reportId, user.claims.sub);
     if (!report) {
       return res.status(404).json({ message: 'Relatório não encontrado' });
     }

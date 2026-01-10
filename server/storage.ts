@@ -18,6 +18,8 @@ export interface IStorage {
   getReport(id: number): Promise<Report | undefined>;
   createReport(report: InsertReport & { userId: string }): Promise<Report>;
   verifyReport(id: number, userId: string): Promise<Report | undefined>;
+  downvoteReport(id: number, userId: string): Promise<Report | undefined>;
+  getUserVote(reportId: number, userId: string): Promise<string | null>;
   hasUserVerified(reportId: number, userId: string): Promise<boolean>;
   
   getComments(reportId: number): Promise<Comment[]>;
@@ -48,16 +50,36 @@ export class DatabaseStorage implements IStorage {
   }
 
   async verifyReport(id: number, userId: string): Promise<Report | undefined> {
-    // Verifica se usuário já verificou este relatório (persistido no banco)
-    if (await this.hasUserVerified(id, userId)) {
+    const existingVote = await this.getUserVote(id, userId);
+    
+    if (existingVote === 'up') {
       return await this.getReport(id);
     }
     
     try {
-      // Registra verificação no banco de dados (índice único previne duplicatas)
+      if (existingVote === 'down') {
+        await db.update(reportVerifications)
+          .set({ voteType: 'up' })
+          .where(and(
+            eq(reportVerifications.reportId, id),
+            eq(reportVerifications.userId, userId)
+          ));
+        
+        const [updated] = await db
+          .update(reports)
+          .set({ 
+            verifiedCount: sql`${reports.verifiedCount} + 1`,
+            downvoteCount: sql`GREATEST(${reports.downvoteCount} - 1, 0)`
+          })
+          .where(eq(reports.id, id))
+          .returning();
+        return updated;
+      }
+      
       await db.insert(reportVerifications).values({
         reportId: id,
         userId,
+        voteType: 'up',
       });
       
       const [updated] = await db
@@ -67,12 +89,70 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return updated;
     } catch (error: any) {
-      // Se for erro de duplicata (race condition), retorna relatório atual
-      if (error.code === '23505') { // unique_violation
+      if (error.code === '23505') {
         return await this.getReport(id);
       }
       throw error;
     }
+  }
+
+  async downvoteReport(id: number, userId: string): Promise<Report | undefined> {
+    const existingVote = await this.getUserVote(id, userId);
+    
+    if (existingVote === 'down') {
+      return await this.getReport(id);
+    }
+    
+    try {
+      if (existingVote === 'up') {
+        await db.update(reportVerifications)
+          .set({ voteType: 'down' })
+          .where(and(
+            eq(reportVerifications.reportId, id),
+            eq(reportVerifications.userId, userId)
+          ));
+        
+        const [updated] = await db
+          .update(reports)
+          .set({ 
+            verifiedCount: sql`GREATEST(${reports.verifiedCount} - 1, 0)`,
+            downvoteCount: sql`${reports.downvoteCount} + 1`
+          })
+          .where(eq(reports.id, id))
+          .returning();
+        return updated;
+      }
+      
+      await db.insert(reportVerifications).values({
+        reportId: id,
+        userId,
+        voteType: 'down',
+      });
+      
+      const [updated] = await db
+        .update(reports)
+        .set({ downvoteCount: sql`${reports.downvoteCount} + 1` })
+        .where(eq(reports.id, id))
+        .returning();
+      return updated;
+    } catch (error: any) {
+      if (error.code === '23505') {
+        return await this.getReport(id);
+      }
+      throw error;
+    }
+  }
+
+  async getUserVote(reportId: number, userId: string): Promise<string | null> {
+    const [existing] = await db
+      .select({ voteType: reportVerifications.voteType })
+      .from(reportVerifications)
+      .where(and(
+        eq(reportVerifications.reportId, reportId),
+        eq(reportVerifications.userId, userId)
+      ))
+      .limit(1);
+    return existing?.voteType || null;
   }
 
   async hasUserVerified(reportId: number, userId: string): Promise<boolean> {
