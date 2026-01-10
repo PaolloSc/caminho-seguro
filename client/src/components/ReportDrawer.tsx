@@ -114,7 +114,7 @@ export function ReportDrawer({ isOpen, onClose, location }: ReportDrawerProps) {
   };
 
   const formContent = (
-    <div className="space-y-6 py-4">
+    <div className={`py-4 ${isMobile ? 'space-y-4' : 'space-y-6'}`}>
       <div className="bg-muted/50 p-3 rounded-lg flex items-center gap-3 text-sm">
         <MapPin className="w-5 h-5 text-primary flex-shrink-0" />
         <div className="flex-1 min-w-0">
@@ -130,8 +130,8 @@ export function ReportDrawer({ isOpen, onClose, location }: ReportDrawerProps) {
       </div>
 
       <div className="space-y-2">
-        <Label className="text-base font-semibold">O que está acontecendo?</Label>
-        <div className="grid grid-cols-2 gap-3">
+        <Label className={`font-semibold ${isMobile ? 'text-sm' : 'text-base'}`}>O que está acontecendo?</Label>
+        <div className={`grid grid-cols-2 ${isMobile ? 'gap-2' : 'gap-3'}`}>
           {[
             { id: 'assedio', icon: AlertTriangle, label: 'Assédio', color: 'text-destructive border-destructive/20 bg-destructive/5' },
             { id: 'iluminacao_precaria', icon: Lightbulb, label: 'Iluminação Precária', color: 'text-[hsl(var(--warning))] border-[hsl(var(--warning))]/20 bg-[hsl(var(--warning))]/5' },
@@ -141,14 +141,14 @@ export function ReportDrawer({ isOpen, onClose, location }: ReportDrawerProps) {
             <button
               key={item.id}
               onClick={() => setType(item.id)}
-              className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all duration-200
+              className={`${isMobile ? 'p-3' : 'p-4'} rounded-xl border-2 flex flex-col items-center gap-1.5 transition-all duration-200
                 ${type === item.id 
                   ? `ring-2 ring-offset-1 ring-primary ${item.color} border-transparent` 
                   : 'border-border hover:border-primary/50 bg-card'
                 }`}
             >
-              <item.icon className="w-6 h-6" />
-              <span className="text-xs font-semibold">{item.label}</span>
+              <item.icon className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'}`} />
+              <span className="text-xs font-semibold text-center leading-tight">{item.label}</span>
             </button>
           ))}
         </div>
@@ -218,13 +218,15 @@ export function ReportDrawer({ isOpen, onClose, location }: ReportDrawerProps) {
   if (isMobile) {
     return (
       <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DrawerContent className="px-4 pb-8 max-h-[85vh] flex flex-col">
-          <DrawerHeader className="flex-shrink-0">
-            <DrawerTitle>Relatar Incidente</DrawerTitle>
-            <DrawerDescription>Ajude outras pessoas a ficarem seguras compartilhando detalhes.</DrawerDescription>
+        <DrawerContent className="px-4 pb-6 max-h-[90vh] flex flex-col">
+          <DrawerHeader className="flex-shrink-0 pb-2">
+            <DrawerTitle className="text-lg">Relatar Incidente</DrawerTitle>
+            <DrawerDescription className="text-sm">Ajude outras pessoas a ficarem seguras compartilhando detalhes.</DrawerDescription>
           </DrawerHeader>
-          <ScrollArea className="flex-1 overflow-y-auto pr-4">
-            {formContent}
+          <ScrollArea className="flex-1 overflow-y-auto pr-2 -mr-2">
+            <div className="pr-4">
+              {formContent}
+            </div>
           </ScrollArea>
         </DrawerContent>
       </Drawer>

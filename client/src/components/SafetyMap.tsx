@@ -388,9 +388,48 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
     onAddReport(e.latlng.lat, e.latlng.lng);
   }, [onAddReport]);
 
+  const geolocateClickRef = useRef<{ timer: NodeJS.Timeout | null; clicks: number }>({ timer: null, clicks: 0 });
+  
   const handleGeolocate = () => {
     if (!map) return;
-    map.locate({ setView: true, maxZoom: 16 });
+    
+    geolocateClickRef.current.clicks++;
+    
+    if (geolocateClickRef.current.timer) {
+      clearTimeout(geolocateClickRef.current.timer);
+    }
+    
+    geolocateClickRef.current.timer = setTimeout(() => {
+      const clicks = geolocateClickRef.current.clicks;
+      geolocateClickRef.current.clicks = 0;
+      geolocateClickRef.current.timer = null;
+      
+      const currentZoom = map.getZoom();
+      
+      if (clicks >= 2) {
+        const newZoom = Math.max(currentZoom - 2, 10);
+        if (userPosition) {
+          map.flyTo([userPosition.lat, userPosition.lng], newZoom, { animate: true, duration: 0.5 });
+        } else {
+          map.once('locationfound', (e) => {
+            setUserPosition({ lat: e.latlng.lat, lng: e.latlng.lng });
+            map.flyTo(e.latlng, newZoom, { animate: true, duration: 0.5 });
+          });
+          map.locate();
+        }
+      } else {
+        const newZoom = Math.min(currentZoom + 2, 19);
+        if (userPosition) {
+          map.flyTo([userPosition.lat, userPosition.lng], newZoom, { animate: true, duration: 0.5 });
+        } else {
+          map.once('locationfound', (e) => {
+            setUserPosition({ lat: e.latlng.lat, lng: e.latlng.lng });
+            map.flyTo(e.latlng, newZoom, { animate: true, duration: 0.5 });
+          });
+          map.locate();
+        }
+      }
+    }, 300);
   };
 
   useEffect(() => {
