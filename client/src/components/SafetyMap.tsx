@@ -437,6 +437,9 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
       // Começa de longe e descentralizado (ex: Brasília ou visão geral do Brasil)
       map.setView([-15.7801, -47.9292], 4, { animate: false });
       
+      // Solicita localização imediatamente de forma mais assertiva
+      map.locate({ setView: false, maxZoom: 18, enableHighAccuracy: true });
+
       // Timer para iniciar a animação de aproximação
       const timer = setTimeout(() => {
         if (userPosition) {
@@ -444,15 +447,15 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
             duration: 3,
             easeLinearity: 0.25
           });
+          setIsInitialAnimation(false);
         } else {
-          // Fallback para BH se não tiver localização ainda
-          map.flyTo([-19.9167, -43.9345], 16, {
-            duration: 3,
-            easeLinearity: 0.25
-          });
+          // Se ainda não tiver localização, tenta localizar novamente e espera um pouco mais
+          map.locate({ setView: true, maxZoom: 16, enableHighAccuracy: true });
+          // Marcamos como false para não repetir o loop do flyTo, 
+          // mas o locate com setView: true fará o trabalho de centralizar
+          setIsInitialAnimation(false);
         }
-        setIsInitialAnimation(false);
-      }, 1000);
+      }, 1500);
 
       return () => clearTimeout(timer);
     }

@@ -2,16 +2,17 @@ import { useState, useEffect } from "react";
 import { SafetyMap } from "@/components/SafetyMap";
 import { ReportDrawer } from "@/components/ReportDrawer";
 import { Button } from "@/components/ui/button-custom";
-import { useReports, useVerifyReport } from "@/hooks/use-reports";
+import { useReports } from "@/hooks/use-reports";
 import { useAuth } from "@/hooks/use-auth";
-import { Plus, Shield, User, Menu, X, LogOut, Moon, Sun, AlertTriangle, Lightbulb, Ghost, ThumbsUp, Settings } from "lucide-react";
-import { Link, useLocation } from "wouter";
+import { Plus, Shield, Menu, Moon, Sun, AlertTriangle, Lightbulb, Ghost, ThumbsUp, Settings, LogOut } from "lucide-react";
+import { Link } from "wouter";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { labels } from "@/lib/labels";
+import { useVerifyReport } from "@/hooks/use-reports";
 
 // Detecta se é noite (entre 18h e 6h)
 function isNightTime(): boolean {
