@@ -308,7 +308,7 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
       ...prev,
       latitude: e.coords.latitude,
       longitude: e.coords.longitude,
-      zoom: 15
+      zoom: 17
     }));
   }, []);
 
