@@ -121,7 +121,7 @@ export default function Configuracoes() {
               <ArrowLeft className="w-5 h-5" />
             </Button>
           </Link>
-          <h1 className="font-semibold text-lg">Conta e login</h1>
+          <h1 className="font-semibold text-base truncate pr-2">Conta e login</h1>
           <Link href="/">
             <Button variant="ghost" size="icon">
               <X className="w-5 h-5" />

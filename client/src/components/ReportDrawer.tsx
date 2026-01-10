@@ -134,7 +134,7 @@ export function ReportDrawer({ isOpen, onClose, location }: ReportDrawerProps) {
         <div className={`grid grid-cols-2 ${isMobile ? 'gap-1.5' : 'gap-3'}`}>
           {[
             { id: 'assedio', icon: AlertTriangle, label: 'Assédio', color: 'text-destructive border-destructive/20 bg-destructive/5' },
-            { id: 'iluminacao_precaria', icon: Lightbulb, label: 'Iluminação', color: 'text-[hsl(var(--warning))] border-[hsl(var(--warning))]/20 bg-[hsl(var(--warning))]/5' },
+            { id: 'iluminacao_precaria', icon: Lightbulb, label: 'Luz', color: 'text-[hsl(var(--warning))] border-[hsl(var(--warning))]/20 bg-[hsl(var(--warning))]/5' },
             { id: 'deserto', icon: Ghost, label: 'Deserto', color: 'text-gray-500 border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50' },
             { id: 'abrigo_seguro', icon: Shield, label: 'Abrigo', color: 'text-[hsl(var(--safe))] border-[hsl(var(--safe))]/20 bg-[hsl(var(--safe))]/5' },
           ].map((item) => (
@@ -218,7 +218,7 @@ export function ReportDrawer({ isOpen, onClose, location }: ReportDrawerProps) {
   if (isMobile) {
     return (
       <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DrawerContent className="px-3 max-h-[85vh] flex flex-col">
+        <DrawerContent className="px-3 h-[95vh] flex flex-col">
           <DrawerHeader className="flex-shrink-0 py-2 px-1">
             <DrawerTitle className="text-base">Relatar Incidente</DrawerTitle>
             <DrawerDescription className="text-xs">Ajude outras pessoas a ficarem seguras.</DrawerDescription>
