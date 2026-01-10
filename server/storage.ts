@@ -50,30 +50,35 @@ export class DatabaseStorage implements IStorage {
   }
 
   async verifyReport(id: number, userId: string): Promise<Report | undefined> {
-    const existingVote = await this.getUserVote(id, userId);
-    
-    if (existingVote === 'up') {
-      return await this.getReport(id);
-    }
-    
     try {
+      const existingVote = await this.getUserVote(id, userId);
+      
+      if (existingVote === 'up') {
+        return await this.getReport(id);
+      }
+      
       if (existingVote === 'down') {
-        await db.update(reportVerifications)
+        const updateResult = await db.update(reportVerifications)
           .set({ voteType: 'up' })
           .where(and(
             eq(reportVerifications.reportId, id),
-            eq(reportVerifications.userId, userId)
-          ));
-        
-        const [updated] = await db
-          .update(reports)
-          .set({ 
-            verifiedCount: sql`${reports.verifiedCount} + 1`,
-            downvoteCount: sql`GREATEST(${reports.downvoteCount} - 1, 0)`
-          })
-          .where(eq(reports.id, id))
+            eq(reportVerifications.userId, userId),
+            eq(reportVerifications.voteType, 'down')
+          ))
           .returning();
-        return updated;
+        
+        if (updateResult.length > 0) {
+          const [updated] = await db
+            .update(reports)
+            .set({ 
+              verifiedCount: sql`${reports.verifiedCount} + 1`,
+              downvoteCount: sql`GREATEST(${reports.downvoteCount} - 1, 0)`
+            })
+            .where(eq(reports.id, id))
+            .returning();
+          return updated;
+        }
+        return await this.getReport(id);
       }
       
       await db.insert(reportVerifications).values({
@@ -97,30 +102,35 @@ export class DatabaseStorage implements IStorage {
   }
 
   async downvoteReport(id: number, userId: string): Promise<Report | undefined> {
-    const existingVote = await this.getUserVote(id, userId);
-    
-    if (existingVote === 'down') {
-      return await this.getReport(id);
-    }
-    
     try {
+      const existingVote = await this.getUserVote(id, userId);
+      
+      if (existingVote === 'down') {
+        return await this.getReport(id);
+      }
+      
       if (existingVote === 'up') {
-        await db.update(reportVerifications)
+        const updateResult = await db.update(reportVerifications)
           .set({ voteType: 'down' })
           .where(and(
             eq(reportVerifications.reportId, id),
-            eq(reportVerifications.userId, userId)
-          ));
-        
-        const [updated] = await db
-          .update(reports)
-          .set({ 
-            verifiedCount: sql`GREATEST(${reports.verifiedCount} - 1, 0)`,
-            downvoteCount: sql`${reports.downvoteCount} + 1`
-          })
-          .where(eq(reports.id, id))
+            eq(reportVerifications.userId, userId),
+            eq(reportVerifications.voteType, 'up')
+          ))
           .returning();
-        return updated;
+        
+        if (updateResult.length > 0) {
+          const [updated] = await db
+            .update(reports)
+            .set({ 
+              verifiedCount: sql`GREATEST(${reports.verifiedCount} - 1, 0)`,
+              downvoteCount: sql`${reports.downvoteCount} + 1`
+            })
+            .where(eq(reports.id, id))
+            .returning();
+          return updated;
+        }
+        return await this.getReport(id);
       }
       
       await db.insert(reportVerifications).values({

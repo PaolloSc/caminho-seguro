@@ -4,7 +4,7 @@ import { ReportDrawer } from "@/components/ReportDrawer";
 import { Button } from "@/components/ui/button-custom";
 import { useReports, useVerifyReport } from "@/hooks/use-reports";
 import { useAuth } from "@/hooks/use-auth";
-import { Plus, Shield, User, Menu, X, LogOut, Moon, Sun, AlertTriangle, Lightbulb, Ghost, ThumbsUp } from "lucide-react";
+import { Plus, Shield, User, Menu, X, LogOut, Moon, Sun, AlertTriangle, Lightbulb, Ghost, ThumbsUp, Settings } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -131,6 +131,18 @@ export default function Home() {
                   </div>
 
                   <div className="pt-6 border-t border-border space-y-2">
+                    {isAuthenticated && (
+                      <Link href="/configuracoes">
+                        <Button 
+                          variant="ghost" 
+                          className="w-full justify-start"
+                          data-testid="link-settings"
+                        >
+                          <Settings className="w-4 h-4 mr-2" />
+                          Configurações
+                        </Button>
+                      </Link>
+                    )}
                     <div className="flex gap-2 text-xs">
                       <Link href="/termos">
                         <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" data-testid="link-terms">
