@@ -66,6 +66,7 @@ interface ReportDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   location: { lat: number, lng: number } | null;
+  onLocationChange?: (lat: number, lng: number) => void;
 }
 
 export function ReportDrawer({ isOpen, onClose, location }: ReportDrawerProps) {
