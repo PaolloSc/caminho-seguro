@@ -74,6 +74,7 @@ export function ReportDrawer({ isOpen, onClose, location }: ReportDrawerProps) {
   
   const [type, setType] = useState<string>("assedio");
   const [description, setDescription] = useState("");
+  const [reference, setReference] = useState("");
   const [severity, setSeverity] = useState([3]);
   const [address, setAddress] = useState<string>("");
   const [isLoadingAddress, setIsLoadingAddress] = useState(false);
@@ -95,6 +96,7 @@ export function ReportDrawer({ isOpen, onClose, location }: ReportDrawerProps) {
     createReport({
       type,
       description,
+      reference: reference || undefined,
       severity: severity[0],
       lat: location.lat,
       lng: location.lng
@@ -103,6 +105,7 @@ export function ReportDrawer({ isOpen, onClose, location }: ReportDrawerProps) {
         onClose();
         // Reset form
         setDescription("");
+        setReference("");
         setSeverity([3]);
         setType("assedio");
       }
@@ -179,7 +182,23 @@ export function ReportDrawer({ isOpen, onClose, location }: ReportDrawerProps) {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           className="min-h-[100px] resize-none rounded-xl"
+          data-testid="input-description"
         />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="reference">Ponto de Referência (opcional)</Label>
+        <Textarea
+          id="reference"
+          placeholder="Ex: próximo ao ponto de ônibus, em frente à padaria..."
+          value={reference}
+          onChange={(e) => setReference(e.target.value)}
+          className="min-h-[60px] resize-none rounded-xl"
+          data-testid="input-reference"
+        />
+        <p className="text-xs text-muted-foreground">
+          Adicione detalhes que ajudem a identificar melhor o local
+        </p>
       </div>
 
       <Button 
@@ -188,6 +207,7 @@ export function ReportDrawer({ isOpen, onClose, location }: ReportDrawerProps) {
         className="w-full"
         size="lg"
         disabled={!description}
+        data-testid="button-submit-report"
       >
         Enviar Relato
       </Button>

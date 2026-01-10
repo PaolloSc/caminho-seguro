@@ -11,6 +11,7 @@ export const reports = pgTable("reports", {
   userId: varchar("user_id").notNull(), // Links to auth.users.id
   type: text("type").notNull(), // 'assedio', 'iluminacao_precaria', 'deserto', 'abrigo_seguro', 'outro'
   description: text("description").notNull(),
+  reference: text("reference"), // Ponto de referência opcional (ex: "próximo ao ponto de ônibus")
   severity: integer("severity").default(1), // 1-5
   lat: real("lat").notNull(),
   lng: real("lng").notNull(),

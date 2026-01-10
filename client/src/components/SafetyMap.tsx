@@ -1,15 +1,246 @@
-import { useEffect, useState, useRef } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
+import { useEffect, useState, useRef, useCallback } from "react";
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, CircleMarker } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-rotate";
 import { Report } from "@shared/schema";
 import { format } from "date-fns";
-import { Shield, AlertTriangle, Lightbulb, Ghost, HelpCircle, MapPin, ThumbsUp, ThumbsDown, MessageCircle, Flag } from "lucide-react";
+import { Shield, AlertTriangle, Lightbulb, Ghost, HelpCircle, MapPin, ThumbsUp, ThumbsDown, MessageCircle, Flag, Bus, TreePine, Building2, Siren } from "lucide-react";
 import { renderToString } from "react-dom/server";
 import { Button } from "./ui/button-custom";
 import { useAuth } from "@/hooks/use-auth";
 import { useVerifyReport, useDownvoteReport, useFlagReport } from "@/hooks/use-reports";
+
+// Tipos de POI
+interface POI {
+  id: string;
+  lat: number;
+  lng: number;
+  type: 'bus_stop' | 'park' | 'hospital' | 'police';
+  name?: string;
+}
+
+// Cache de POIs por bounds
+const poiCache = new Map<string, { pois: POI[], timestamp: number }>();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+
+// Busca POIs via Overpass API
+async function fetchPOIs(bounds: L.LatLngBounds): Promise<POI[]> {
+  const cacheKey = `${bounds.getSouth().toFixed(3)},${bounds.getWest().toFixed(3)},${bounds.getNorth().toFixed(3)},${bounds.getEast().toFixed(3)}`;
+  
+  const cached = poiCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.pois;
+  }
+  
+  const bbox = `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`;
+  
+  const query = `
+    [out:json][timeout:10];
+    (
+      node["highway"="bus_stop"](${bbox});
+      node["leisure"="park"](${bbox});
+      way["leisure"="park"](${bbox});
+      node["amenity"="hospital"](${bbox});
+      way["amenity"="hospital"](${bbox});
+      node["amenity"="police"](${bbox});
+      way["amenity"="police"](${bbox});
+    );
+    out center 100;
+  `;
+  
+  try {
+    const response = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST',
+      body: `data=${encodeURIComponent(query)}`,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
+    
+    if (!response.ok) return [];
+    
+    const data = await response.json();
+    const pois: POI[] = data.elements.map((el: any) => {
+      let type: POI['type'] = 'bus_stop';
+      if (el.tags?.leisure === 'park') type = 'park';
+      else if (el.tags?.amenity === 'hospital') type = 'hospital';
+      else if (el.tags?.amenity === 'police') type = 'police';
+      else if (el.tags?.highway === 'bus_stop') type = 'bus_stop';
+      
+      return {
+        id: `${el.type}-${el.id}`,
+        lat: el.lat || el.center?.lat,
+        lng: el.lon || el.center?.lon,
+        type,
+        name: el.tags?.name
+      };
+    }).filter((p: POI) => p.lat && p.lng);
+    
+    poiCache.set(cacheKey, { pois, timestamp: Date.now() });
+    return pois;
+  } catch (error) {
+    console.error('Error fetching POIs:', error);
+    return [];
+  }
+}
+
+// Ícone pequeno para POI
+const createPOIIcon = (type: POI['type']) => {
+  const colors = {
+    bus_stop: '#3b82f6',
+    park: '#22c55e', 
+    hospital: '#ef4444',
+    police: '#8b5cf6'
+  };
+  
+  const icons = {
+    bus_stop: '<path d="M8 6v6h8v-6a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2z"/><path d="M18 12H6a2 2 0 0 0-2 2v2h16v-2a2 2 0 0 0-2-2z"/><circle cx="7" cy="17" r="1.5"/><circle cx="17" cy="17" r="1.5"/><path d="M5.5 17.5h13"/>',
+    park: '<path d="M12 3l-4 7h8l-4-7z"/><path d="M12 8l-5 9h10l-5-9z"/><rect x="11" y="17" width="2" height="4"/>',
+    hospital: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12h6"/><path d="M12 9v6"/>',
+    police: '<path d="M12 2l7 4v6c0 5-3 8-7 10-4-2-7-5-7-10V6l7-4z"/>'
+  };
+  
+  const html = `
+    <div style="
+      width: 24px;
+      height: 24px;
+      background: ${colors[type]};
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    ">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="white" stroke="white" stroke-width="0">
+        ${icons[type]}
+      </svg>
+    </div>
+  `;
+  
+  return L.divIcon({
+    html,
+    className: 'poi-marker',
+    iconSize: [24, 24],
+    iconAnchor: [12, 12]
+  });
+};
+
+// Componente para exibir POIs no mapa
+function POILayer({ showPOIs }: { showPOIs: boolean }) {
+  const map = useMap();
+  const [pois, setPois] = useState<POI[]>([]);
+  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const showPOIsRef = useRef(showPOIs);
+  
+  // Keep ref in sync with prop
+  useEffect(() => {
+    showPOIsRef.current = showPOIs;
+    if (!showPOIs) {
+      setPois([]);
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+        fetchTimeoutRef.current = null;
+      }
+    }
+  }, [showPOIs]);
+  
+  const loadPOIs = useCallback(async () => {
+    if (!showPOIsRef.current) return;
+    const zoom = map.getZoom();
+    if (zoom < 14) {
+      setPois([]);
+      return;
+    }
+    
+    const bounds = map.getBounds();
+    const newPois = await fetchPOIs(bounds);
+    if (showPOIsRef.current) {
+      setPois(newPois);
+    }
+  }, [map]);
+  
+  useMapEvents({
+    moveend: () => {
+      if (!showPOIsRef.current) return;
+      if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current);
+      fetchTimeoutRef.current = setTimeout(loadPOIs, 500);
+    },
+    zoomend: () => {
+      if (!showPOIsRef.current) return;
+      if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current);
+      fetchTimeoutRef.current = setTimeout(loadPOIs, 500);
+    }
+  });
+  
+  useEffect(() => {
+    if (showPOIs) {
+      loadPOIs();
+    }
+    return () => {
+      if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current);
+    };
+  }, [showPOIs, loadPOIs]);
+  
+  if (!showPOIs) return null;
+  
+  const poiLabels = {
+    bus_stop: 'Ponto de Ônibus',
+    park: 'Parque',
+    hospital: 'Hospital',
+    police: 'Delegacia'
+  };
+  
+  return (
+    <>
+      {pois.map(poi => (
+        <Marker 
+          key={poi.id} 
+          position={[poi.lat, poi.lng]} 
+          icon={createPOIIcon(poi.type)}
+        >
+          <Popup>
+            <div className="text-sm">
+              <strong>{poiLabels[poi.type]}</strong>
+              {poi.name && <div className="text-muted-foreground">{poi.name}</div>}
+            </div>
+          </Popup>
+        </Marker>
+      ))}
+    </>
+  );
+}
+
+// Botão de toggle para POIs
+function POIToggleButton({ showPOIs, onToggle }: { showPOIs: boolean; onToggle: () => void }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    if (containerRef.current) {
+      L.DomEvent.disableClickPropagation(containerRef.current);
+      L.DomEvent.disableScrollPropagation(containerRef.current);
+    }
+  }, []);
+  
+  return (
+    <div 
+      ref={containerRef}
+      className="absolute top-20 right-4 z-[1000]"
+    >
+      <button
+        onClick={onToggle}
+        className={`w-10 h-10 rounded-full shadow-lg flex items-center justify-center border transition-all
+          ${showPOIs 
+            ? 'bg-blue-600 border-blue-400 text-white' 
+            : 'bg-gray-900/90 border-gray-700 text-white hover:bg-gray-800'
+          }`}
+        title={showPOIs ? "Ocultar pontos de interesse" : "Mostrar pontos de interesse"}
+        data-testid="button-toggle-pois"
+      >
+        <Bus className="w-5 h-5" />
+      </button>
+    </div>
+  );
+}
 
 // Fix for default markers
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -328,6 +559,7 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
   const [mapCenter, setMapCenter] = useState<[number, number]>([-23.5505, -46.6333]); // Default SP
   const [userPosition, setUserPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [isNavigationMode, setIsNavigationMode] = useState(false);
+  const [showPOIs, setShowPOIs] = useState(true);
   const mapRef = useRef<L.Map | null>(null);
   
   const handleFlag = (reportId: number) => {
@@ -378,6 +610,9 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
           isNavigationMode={isNavigationMode}
           onToggleNavigation={(granted) => setIsNavigationMode(!isNavigationMode)}
         />
+        
+        <POILayer showPOIs={showPOIs} />
+        <POIToggleButton showPOIs={showPOIs} onToggle={() => setShowPOIs(!showPOIs)} />
         
         <MapEvents onMapClick={onAddReport} />
 
