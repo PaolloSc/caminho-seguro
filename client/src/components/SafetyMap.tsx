@@ -405,29 +405,20 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
       geolocateClickRef.current.timer = null;
       
       const currentZoom = map.getZoom();
+      const isZoomOut = clicks >= 2;
+      const newZoom = isZoomOut 
+        ? Math.max(currentZoom - 2, 10) 
+        : Math.min(currentZoom + 2, 19);
       
-      if (clicks >= 2) {
-        const newZoom = Math.max(currentZoom - 2, 10);
-        if (userPosition) {
-          map.flyTo([userPosition.lat, userPosition.lng], newZoom, { animate: true, duration: 0.5 });
-        } else {
-          map.once('locationfound', (e) => {
-            setUserPosition({ lat: e.latlng.lat, lng: e.latlng.lng });
-            map.flyTo(e.latlng, newZoom, { animate: true, duration: 0.5 });
-          });
-          map.locate();
-        }
+      const centerOnPosition = (lat: number, lng: number) => {
+        map.setView([lat, lng], newZoom, { animate: true });
+        setTimeout(() => map.invalidateSize(), 100);
+      };
+      
+      if (userPosition) {
+        centerOnPosition(userPosition.lat, userPosition.lng);
       } else {
-        const newZoom = Math.min(currentZoom + 2, 19);
-        if (userPosition) {
-          map.flyTo([userPosition.lat, userPosition.lng], newZoom, { animate: true, duration: 0.5 });
-        } else {
-          map.once('locationfound', (e) => {
-            setUserPosition({ lat: e.latlng.lat, lng: e.latlng.lng });
-            map.flyTo(e.latlng, newZoom, { animate: true, duration: 0.5 });
-          });
-          map.locate();
-        }
+        map.locate({ setView: true, maxZoom: newZoom });
       }
     }, 300);
   };
