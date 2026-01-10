@@ -430,6 +430,34 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
     }, 300);
   };
 
+  const [isInitialAnimation, setIsInitialAnimation] = useState(true);
+
+  useEffect(() => {
+    if (map && isInitialAnimation) {
+      // Começa de longe e descentralizado (ex: Brasília ou visão geral do Brasil)
+      map.setView([-15.7801, -47.9292], 4, { animate: false });
+      
+      // Timer para iniciar a animação de aproximação
+      const timer = setTimeout(() => {
+        if (userPosition) {
+          map.flyTo([userPosition.lat, userPosition.lng], 16, {
+            duration: 3,
+            easeLinearity: 0.25
+          });
+        } else {
+          // Fallback para BH se não tiver localização ainda
+          map.flyTo([-19.9167, -43.9345], 16, {
+            duration: 3,
+            easeLinearity: 0.25
+          });
+        }
+        setIsInitialAnimation(false);
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [map, isInitialAnimation, userPosition]);
+
   useEffect(() => {
     if (map) {
       map.on('locationfound', (e) => {
