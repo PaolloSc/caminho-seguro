@@ -64,6 +64,7 @@ export const insertCommentSchema = createInsertSchema(comments).omit({
 
 export const insertReportFlagSchema = createInsertSchema(reportFlags).omit({
   id: true,
+  reportId: true,
   userId: true,
   status: true,
   createdAt: true
