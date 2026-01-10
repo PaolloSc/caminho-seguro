@@ -45,8 +45,9 @@ export function useCreateReport() {
       });
 
       if (!res.ok) {
-        if (res.status === 401) throw new Error("Please log in to report.");
-        throw new Error("Failed to create report");
+        if (res.status === 401) throw new Error("Faça login para enviar um relato.");
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || "Erro ao criar relato");
       }
       return api.reports.create.responses[201].parse(await res.json());
     },
@@ -172,8 +173,9 @@ export function useCreateComment() {
       });
 
       if (!res.ok) {
-        if (res.status === 401) throw new Error("Please log in to comment.");
-        throw new Error("Failed to post comment");
+        if (res.status === 401) throw new Error("Faça login para comentar.");
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || "Erro ao publicar comentário");
       }
       return api.comments.create.responses[201].parse(await res.json());
     },
