@@ -715,18 +715,6 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
         >
           <Flame className="w-5 h-5" />
         </button>
-        <button
-          onClick={() => setShowPOIs(!showPOIs)}
-          className={`w-11 h-11 rounded-full shadow-lg flex items-center justify-center border transition-all
-            ${showPOIs 
-              ? 'bg-blue-600 border-blue-400 text-white' 
-              : 'bg-card/90 backdrop-blur-md border-border text-foreground hover:bg-card'
-            }`}
-          title={showPOIs ? "Ocultar pontos de interesse" : "Mostrar pontos de interesse (ônibus, hospitais, etc.)"}
-          data-testid="button-toggle-pois"
-        >
-          <MapPin className="w-5 h-5" />
-        </button>
       </div>
     </div>
   );
