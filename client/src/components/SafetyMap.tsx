@@ -501,11 +501,10 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
         <div 
           className="cursor-pointer transition-transform hover:scale-110"
           style={{
-            width: '36px',
-            height: '36px',
+            width: '32px',
+            height: '32px',
             borderRadius: '50%',
             backgroundColor: color,
-            border: '3px solid white',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
@@ -514,8 +513,8 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
           <Icon className="w-4 h-4 text-white" />
         </div>
       ),
-      iconSize: [36, 36],
-      iconAnchor: [18, 18],
+      iconSize: [32, 32],
+      iconAnchor: [16, 16],
     });
   };
 
@@ -529,11 +528,10 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
         <div
           className="cursor-pointer transition-transform hover:scale-110"
           style={{
-            width: '24px',
-            height: '24px',
+            width: '22px',
+            height: '22px',
             borderRadius: '50%',
             backgroundColor: color,
-            border: '2px solid white',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
@@ -542,8 +540,8 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
           <Icon className="w-3 h-3 text-white" />
         </div>
       ),
-      iconSize: [24, 24],
-      iconAnchor: [12, 12],
+      iconSize: [22, 22],
+      iconAnchor: [11, 11],
     });
   };
 
