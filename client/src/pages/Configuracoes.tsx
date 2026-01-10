@@ -146,9 +146,16 @@ export default function Configuracoes() {
 
         <Separator />
 
-        <div className="py-4 px-4">
-          <p className="text-sm text-muted-foreground">Senha</p>
-          <p className="font-medium mt-1 text-muted-foreground">••••••••</p>
+        <div className="flex items-center justify-between py-4 px-4">
+          <div>
+            <p className="text-sm text-muted-foreground">Senha</p>
+            <p className="font-medium mt-1 text-muted-foreground">••••••••</p>
+          </div>
+          <a href="mailto:suporte@caminhoseguro.com.br?subject=Recuperação de Senha">
+            <Button variant="ghost" className="text-primary text-sm">
+              Recuperar
+            </Button>
+          </a>
         </div>
 
         <Separator />
@@ -159,7 +166,7 @@ export default function Configuracoes() {
 
         <Separator />
 
-        <div className="flex items-center justify-between py-4 px-4 hover:bg-muted/50 transition-colors cursor-pointer">
+        <div className="flex items-center justify-between py-4 px-4 opacity-50">
           <p className="font-medium">Avançado</p>
           <ChevronRight className="w-5 h-5 text-muted-foreground" />
         </div>
