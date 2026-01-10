@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useCreateReport } from "@/hooks/use-reports";
 import { useState } from "react";
 import { AlertTriangle, Lightbulb, Ghost, Shield, MapPin, Loader2 } from "lucide-react";
@@ -123,12 +124,14 @@ export function ReportDrawer({ isOpen, onClose, location }: ReportDrawerProps) {
   if (isMobile) {
     return (
       <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DrawerContent className="px-4 pb-8 max-h-[90vh]">
-          <DrawerHeader>
+        <DrawerContent className="px-4 pb-8 max-h-[85vh] flex flex-col">
+          <DrawerHeader className="flex-shrink-0">
             <DrawerTitle>Relatar Incidente</DrawerTitle>
             <DrawerDescription>Ajude outras pessoas a ficarem seguras compartilhando detalhes.</DrawerDescription>
           </DrawerHeader>
-          {formContent}
+          <ScrollArea className="flex-1 overflow-y-auto pr-4">
+            {formContent}
+          </ScrollArea>
         </DrawerContent>
       </Drawer>
     );
