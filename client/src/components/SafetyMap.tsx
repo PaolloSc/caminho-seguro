@@ -389,6 +389,7 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
           ref={geolocateRef}
           position="bottom-right"
           trackUserLocation
+          fitBoundsOptions={{ maxZoom: 17 }}
           onGeolocate={handleGeolocate}
         />
         
