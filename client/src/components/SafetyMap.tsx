@@ -443,36 +443,42 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
       // Solicita localização imediatamente de forma mais assertiva
       map.locate({ setView: false, maxZoom: 18, enableHighAccuracy: true });
 
-      // Timer para iniciar a animação de aproximação
-      const timer = setTimeout(() => {
-        const flyToPosition = (lat: number, lng: number) => {
-          map.flyTo([lat, lng], 16, {
-            duration: 3,
-            easeLinearity: 0.25
-          });
-          
-          // Força recarga dos tiles após a animação terminar
-          setTimeout(() => {
-            map.invalidateSize();
-          }, 3200);
+      // Inicia a animação assim que o mapa estiver pronto, sem esperar muito
+      const startAnimation = (lat: number, lng: number) => {
+        map.flyTo([lat, lng], 16, {
+          duration: 2.5, // Levemente mais rápido
+          easeLinearity: 0.25
+        });
+        
+        setTimeout(() => {
+          map.invalidateSize();
+        }, 2700);
+        setIsInitialAnimation(false);
+      };
+
+      // Se já temos a posição, voa agora mesmo
+      if (userPosition) {
+        startAnimation(userPosition.lat, userPosition.lng);
+      } else {
+        // Se não, voa assim que encontrar
+        const onLocationFound = (e: L.LocationEvent) => {
+          startAnimation(e.latlng.lat, e.latlng.lng);
+          map.off('locationfound', onLocationFound);
         };
-
-        if (userPosition) {
-          flyToPosition(userPosition.lat, userPosition.lng);
-          setIsInitialAnimation(false);
-        } else {
-          // Se ainda não tiver localização, escuta o evento locationfound
-          const onLocationFound = (e: L.LocationEvent) => {
-            flyToPosition(e.latlng.lat, e.latlng.lng);
+        map.on('locationfound', onLocationFound);
+        
+        // Timer de segurança menor: se em 800ms não achar, voa para o padrão (BH)
+        const safetyTimer = setTimeout(() => {
+          if (isInitialAnimation) {
+            startAnimation(-19.9167, -43.9345);
             map.off('locationfound', onLocationFound);
-          };
-          map.on('locationfound', onLocationFound);
-          map.locate({ setView: false, maxZoom: 16, enableHighAccuracy: true });
-          setIsInitialAnimation(false);
-        }
-      }, 1500);
-
-      return () => clearTimeout(timer);
+          }
+        }, 800);
+        return () => {
+          clearTimeout(safetyTimer);
+          map.off('locationfound', onLocationFound);
+        };
+      }
     }
   }, [map, isInitialAnimation, userPosition]);
 
