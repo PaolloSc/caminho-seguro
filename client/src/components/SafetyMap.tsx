@@ -3,9 +3,10 @@ import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, CircleMar
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-rotate";
+import "leaflet.heat";
 import { Report } from "@shared/schema";
 import { format } from "date-fns";
-import { Shield, AlertTriangle, Lightbulb, Ghost, HelpCircle, MapPin, ThumbsUp, ThumbsDown, MessageCircle, Flag, Bus, TreePine, Building2, Siren } from "lucide-react";
+import { Shield, AlertTriangle, Lightbulb, Ghost, HelpCircle, MapPin, ThumbsUp, ThumbsDown, MessageCircle, Flag, Bus, TreePine, Building2, Siren, Flame } from "lucide-react";
 import { renderToString } from "react-dom/server";
 import { Button } from "./ui/button-custom";
 import { useAuth } from "@/hooks/use-auth";
@@ -512,6 +513,96 @@ const TILE_URLS = {
   night: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
 };
 
+// Componente HeatmapLayer para visualizar densidade de relatos
+function HeatmapLayer({ reports, showHeatmap }: { reports: Report[]; showHeatmap: boolean }) {
+  const map = useMap();
+  const heatLayerRef = useRef<L.HeatLayer | null>(null);
+
+  useEffect(() => {
+    if (!showHeatmap) {
+      if (heatLayerRef.current) {
+        map.removeLayer(heatLayerRef.current);
+        heatLayerRef.current = null;
+      }
+      return;
+    }
+
+    // Criar pontos de calor com intensidade baseada na severidade
+    const heatPoints: [number, number, number][] = reports.map(report => {
+      // Intensidade baseada na severidade (1-5) e tipo
+      let intensity = (report.severity || 1) / 5;
+      // Relatos de assédio têm mais peso
+      if (report.type === 'assedio') intensity *= 1.5;
+      // Abrigos seguros têm intensidade negativa (verde)
+      if (report.type === 'abrigo_seguro') intensity = 0.1;
+      return [report.lat, report.lng, Math.min(intensity, 1)];
+    });
+
+    if (heatLayerRef.current) {
+      map.removeLayer(heatLayerRef.current);
+    }
+
+    // Criar layer de heatmap
+    heatLayerRef.current = (L as any).heatLayer(heatPoints, {
+      radius: 25,
+      blur: 15,
+      maxZoom: 17,
+      max: 1.0,
+      gradient: {
+        0.0: '#22c55e', // Verde (seguro)
+        0.3: '#eab308', // Amarelo
+        0.5: '#f97316', // Laranja
+        0.7: '#ef4444', // Vermelho
+        1.0: '#991b1b', // Vermelho escuro (muito perigoso)
+      }
+    });
+
+    if (heatLayerRef.current) {
+      heatLayerRef.current.addTo(map);
+    }
+
+    return () => {
+      if (heatLayerRef.current) {
+        map.removeLayer(heatLayerRef.current);
+      }
+    };
+  }, [map, reports, showHeatmap]);
+
+  return null;
+}
+
+// Botão de toggle para Heatmap
+function HeatmapToggleButton({ showHeatmap, onToggle }: { showHeatmap: boolean; onToggle: () => void }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (containerRef.current) {
+      L.DomEvent.disableClickPropagation(containerRef.current);
+      L.DomEvent.disableScrollPropagation(containerRef.current);
+    }
+  }, []);
+
+  return (
+    <div 
+      ref={containerRef}
+      className="absolute top-4 right-4 z-[1000]"
+    >
+      <button
+        onClick={onToggle}
+        className={`w-10 h-10 rounded-full shadow-lg flex items-center justify-center border transition-all
+          ${showHeatmap 
+            ? 'bg-orange-600 border-orange-400 text-white' 
+            : 'bg-gray-900/90 border-gray-700 text-white hover:bg-gray-800'
+          }`}
+        title={showHeatmap ? "Ocultar mapa de calor" : "Mostrar mapa de calor"}
+        data-testid="button-toggle-heatmap"
+      >
+        <Flame className="w-5 h-5" />
+      </button>
+    </div>
+  );
+}
+
 interface SafetyMapProps {
   reports: Report[];
   onAddReport: (lat: number, lng: number) => void;
@@ -528,6 +619,7 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
   const [mapCenter, setMapCenter] = useState<[number, number]>([-23.5505, -46.6333]); // Default SP
   const [userPosition, setUserPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [isNavigationMode, setIsNavigationMode] = useState(false);
+  const [showHeatmap, setShowHeatmap] = useState(false);
   const mapRef = useRef<L.Map | null>(null);
   
   const handleFlag = (reportId: number) => {
@@ -580,6 +672,9 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
         />
         
         <POILayer showPOIs={true} />
+        
+        <HeatmapLayer reports={reports} showHeatmap={showHeatmap} />
+        <HeatmapToggleButton showHeatmap={showHeatmap} onToggle={() => setShowHeatmap(!showHeatmap)} />
         
         <MapEvents onMapClick={onAddReport} />
 
