@@ -144,33 +144,61 @@ function UserLocator({ onLocationFound }: { onLocationFound: (lat: number, lng: 
   return <Marker position={position} icon={userIcon} />;
 }
 
-// Component to recenter map
+// Component to recenter map - Crosshair style button
 function RecenterButton({ userPosition }: { userPosition: { lat: number; lng: number } | null }) {
   const map = useMap();
   
   const handleRecenter = () => {
     if (userPosition) {
-      map.flyTo([userPosition.lat, userPosition.lng], 15, { duration: 1 });
+      map.flyTo([userPosition.lat, userPosition.lng], 16, { duration: 1 });
     } else {
       map.locate().on("locationfound", function (e) {
-        map.flyTo(e.latlng, 15, { duration: 1 });
+        map.flyTo(e.latlng, 16, { duration: 1 });
       });
     }
   };
 
   return (
-    <div className="leaflet-bottom leaflet-left" style={{ marginBottom: '20px', marginLeft: '10px' }}>
+    <div className="leaflet-bottom leaflet-right" style={{ marginBottom: '100px', marginRight: '10px' }}>
       <div className="leaflet-control">
         <button
           onClick={handleRecenter}
-          className="bg-white dark:bg-gray-800 w-10 h-10 rounded-xl shadow-lg flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-600"
+          className="bg-white w-12 h-12 rounded-full shadow-xl flex items-center justify-center hover:scale-105 transition-all duration-200 border-2 border-blue-500"
           title="Centralizar na minha localização"
           data-testid="button-recenter"
         >
-          <svg className="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          <svg className="w-6 h-6 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
           </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Zoom controls component
+function ZoomControls() {
+  const map = useMap();
+  
+  return (
+    <div className="leaflet-top leaflet-right" style={{ marginTop: '80px', marginRight: '10px' }}>
+      <div className="leaflet-control flex flex-col gap-1">
+        <button
+          onClick={() => map.zoomIn()}
+          className="bg-white/90 backdrop-blur w-10 h-10 rounded-lg shadow-lg flex items-center justify-center hover:bg-white transition-colors text-gray-700 font-bold text-xl"
+          title="Aproximar"
+          data-testid="button-zoom-in"
+        >
+          +
+        </button>
+        <button
+          onClick={() => map.zoomOut()}
+          className="bg-white/90 backdrop-blur w-10 h-10 rounded-lg shadow-lg flex items-center justify-center hover:bg-white transition-colors text-gray-700 font-bold text-xl"
+          title="Afastar"
+          data-testid="button-zoom-out"
+        >
+          −
         </button>
       </div>
     </div>
@@ -207,7 +235,7 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className }: Saf
       >
         <TileLayer
           attribution='&copy; <a href="https://carto.com/">CARTO</a>'
-          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         />
         
         <UserLocator onLocationFound={(lat, lng) => {
@@ -215,6 +243,7 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className }: Saf
           setUserPosition({ lat, lng });
         }} />
         
+        <ZoomControls />
         <RecenterButton userPosition={userPosition} />
         
         <MapEvents onMapClick={onAddReport} />
