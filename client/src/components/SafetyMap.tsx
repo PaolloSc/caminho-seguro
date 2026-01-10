@@ -300,16 +300,19 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
   }, [onAddReport]);
 
   const handleGeolocate = useCallback((e: GeolocateResultEvent) => {
-    setUserPosition({
-      lat: e.coords.latitude,
-      lng: e.coords.longitude
-    });
-    setViewState(prev => ({
-      ...prev,
-      latitude: e.coords.latitude,
-      longitude: e.coords.longitude,
-      zoom: 17
-    }));
+    const lat = e.coords.latitude;
+    const lng = e.coords.longitude;
+    
+    setUserPosition({ lat, lng });
+    
+    // Usar flyTo para aproximar com animação
+    if (mapRef.current) {
+      mapRef.current.getMap().flyTo({
+        center: [lng, lat],
+        zoom: 17,
+        duration: 1500
+      });
+    }
   }, []);
 
   const refreshPOIs = useCallback(() => {
