@@ -207,7 +207,7 @@ export function ReportDrawer({ isOpen, onClose, location }: ReportDrawerProps) {
       onClick={handleSubmit} 
       isLoading={isPending}
       className="w-full"
-      size={isMobile ? "default" : "lg"}
+      size={isMobile ? "md" : "lg"}
       disabled={!description}
       data-testid="button-submit-report"
     >
