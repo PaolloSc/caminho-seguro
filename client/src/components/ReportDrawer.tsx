@@ -114,50 +114,51 @@ export function ReportDrawer({ isOpen, onClose, location }: ReportDrawerProps) {
   };
 
   const formContent = (
-    <div className={`py-4 ${isMobile ? 'space-y-4' : 'space-y-6'}`}>
-      <div className="bg-muted/50 p-3 rounded-lg flex items-center gap-3 text-sm">
-        <MapPin className="w-5 h-5 text-primary flex-shrink-0" />
+    <div className={`${isMobile ? 'py-2 space-y-3' : 'py-4 space-y-6'}`}>
+      <div className={`bg-muted/50 ${isMobile ? 'p-2' : 'p-3'} rounded-lg flex items-center gap-2 text-sm`}>
+        <MapPin className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-primary flex-shrink-0`} />
         <div className="flex-1 min-w-0">
           {isLoadingAddress ? (
             <div className="flex items-center gap-2 text-muted-foreground">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Buscando endereço...</span>
+              <Loader2 className="w-3 h-3 animate-spin" />
+              <span className="text-xs">Buscando endereço...</span>
             </div>
           ) : (
-            <span className="font-medium text-foreground truncate block">{address || 'Local selecionado'}</span>
+            <span className={`font-medium text-foreground truncate block ${isMobile ? 'text-xs' : 'text-sm'}`}>{address || 'Local selecionado'}</span>
           )}
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label className={`font-semibold ${isMobile ? 'text-sm' : 'text-base'}`}>O que está acontecendo?</Label>
-        <div className={`grid grid-cols-2 ${isMobile ? 'gap-2' : 'gap-3'}`}>
+      <div className={`${isMobile ? 'space-y-1.5' : 'space-y-2'}`}>
+        <Label className={`font-semibold ${isMobile ? 'text-xs' : 'text-base'}`}>O que está acontecendo?</Label>
+        <div className={`grid grid-cols-2 ${isMobile ? 'gap-1.5' : 'gap-3'}`}>
           {[
             { id: 'assedio', icon: AlertTriangle, label: 'Assédio', color: 'text-destructive border-destructive/20 bg-destructive/5' },
-            { id: 'iluminacao_precaria', icon: Lightbulb, label: 'Iluminação Precária', color: 'text-[hsl(var(--warning))] border-[hsl(var(--warning))]/20 bg-[hsl(var(--warning))]/5' },
-            { id: 'deserto', icon: Ghost, label: 'Lugar Deserto', color: 'text-gray-500 border-gray-200 bg-gray-50' },
-            { id: 'abrigo_seguro', icon: Shield, label: 'Abrigo Seguro', color: 'text-[hsl(var(--safe))] border-[hsl(var(--safe))]/20 bg-[hsl(var(--safe))]/5' },
+            { id: 'iluminacao_precaria', icon: Lightbulb, label: 'Iluminação', color: 'text-[hsl(var(--warning))] border-[hsl(var(--warning))]/20 bg-[hsl(var(--warning))]/5' },
+            { id: 'deserto', icon: Ghost, label: 'Deserto', color: 'text-gray-500 border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50' },
+            { id: 'abrigo_seguro', icon: Shield, label: 'Abrigo', color: 'text-[hsl(var(--safe))] border-[hsl(var(--safe))]/20 bg-[hsl(var(--safe))]/5' },
           ].map((item) => (
             <button
               key={item.id}
               onClick={() => setType(item.id)}
-              className={`${isMobile ? 'p-3' : 'p-4'} rounded-xl border-2 flex flex-col items-center gap-1.5 transition-all duration-200
+              data-testid={`button-type-${item.id}`}
+              className={`${isMobile ? 'p-2' : 'p-4'} rounded-lg border-2 flex flex-col items-center gap-1 transition-all duration-200
                 ${type === item.id 
                   ? `ring-2 ring-offset-1 ring-primary ${item.color} border-transparent` 
                   : 'border-border hover:border-primary/50 bg-card'
                 }`}
             >
-              <item.icon className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'}`} />
-              <span className="text-xs font-semibold text-center leading-tight">{item.label}</span>
+              <item.icon className={`${isMobile ? 'w-4 h-4' : 'w-6 h-6'}`} />
+              <span className={`${isMobile ? 'text-[10px]' : 'text-xs'} font-semibold text-center leading-tight`}>{item.label}</span>
             </button>
           ))}
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className={`${isMobile ? 'space-y-2' : 'space-y-4'}`}>
         <div className="flex justify-between items-center">
-          <Label>Nível de Gravidade</Label>
-          <span className="text-sm font-bold px-2 py-0.5 rounded bg-muted">
+          <Label className={isMobile ? 'text-xs' : ''}>Gravidade</Label>
+          <span className={`${isMobile ? 'text-xs' : 'text-sm'} font-bold px-1.5 py-0.5 rounded bg-muted`}>
             {severity[0]}/5
           </span>
         </div>
@@ -167,67 +168,69 @@ export function ReportDrawer({ isOpen, onClose, location }: ReportDrawerProps) {
           max={5}
           min={1}
           step={1}
-          className="py-4"
+          className={isMobile ? 'py-2' : 'py-4'}
         />
-        <div className="flex justify-between text-xs text-muted-foreground px-1">
+        <div className={`flex justify-between ${isMobile ? 'text-[10px]' : 'text-xs'} text-muted-foreground px-1`}>
           <span>Leve</span>
           <span>Extremo</span>
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="description">Descrição</Label>
+      <div className={`${isMobile ? 'space-y-1' : 'space-y-2'}`}>
+        <Label htmlFor="description" className={isMobile ? 'text-xs' : ''}>Descrição</Label>
         <Textarea
           id="description"
           placeholder="Descreva o que você viu ou vivenciou..."
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="min-h-[100px] resize-none rounded-xl"
+          className={`${isMobile ? 'min-h-[70px] text-sm' : 'min-h-[100px]'} resize-none rounded-lg`}
           data-testid="input-description"
         />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="reference">Ponto de Referência (opcional)</Label>
+      <div className={`${isMobile ? 'space-y-1' : 'space-y-2'}`}>
+        <Label htmlFor="reference" className={isMobile ? 'text-xs' : ''}>Referência (opcional)</Label>
         <Textarea
           id="reference"
-          placeholder="Ex: próximo ao ponto de ônibus, em frente à padaria..."
+          placeholder="Ex: próximo ao ponto de ônibus..."
           value={reference}
           onChange={(e) => setReference(e.target.value)}
-          className="min-h-[60px] resize-none rounded-xl"
+          className={`${isMobile ? 'min-h-[50px] text-sm' : 'min-h-[60px]'} resize-none rounded-lg`}
           data-testid="input-reference"
         />
-        <p className="text-xs text-muted-foreground">
-          Adicione detalhes que ajudem a identificar melhor o local
-        </p>
       </div>
-
-      <Button 
-        onClick={handleSubmit} 
-        isLoading={isPending}
-        className="w-full"
-        size="lg"
-        disabled={!description}
-        data-testid="button-submit-report"
-      >
-        Enviar Relato
-      </Button>
     </div>
+  );
+
+  const submitButton = (
+    <Button 
+      onClick={handleSubmit} 
+      isLoading={isPending}
+      className="w-full"
+      size={isMobile ? "default" : "lg"}
+      disabled={!description}
+      data-testid="button-submit-report"
+    >
+      Enviar Relato
+    </Button>
   );
 
   if (isMobile) {
     return (
       <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DrawerContent className="px-4 pb-6 max-h-[90vh] flex flex-col">
-          <DrawerHeader className="flex-shrink-0 pb-2">
-            <DrawerTitle className="text-lg">Relatar Incidente</DrawerTitle>
-            <DrawerDescription className="text-sm">Ajude outras pessoas a ficarem seguras compartilhando detalhes.</DrawerDescription>
+        <DrawerContent className="px-3 max-h-[85vh] flex flex-col">
+          <DrawerHeader className="flex-shrink-0 py-2 px-1">
+            <DrawerTitle className="text-base">Relatar Incidente</DrawerTitle>
+            <DrawerDescription className="text-xs">Ajude outras pessoas a ficarem seguras.</DrawerDescription>
           </DrawerHeader>
-          <ScrollArea className="flex-1 overflow-y-auto pr-2 -mr-2">
-            <div className="pr-4">
+          <ScrollArea className="flex-1 overflow-y-auto">
+            <div className="px-1">
               {formContent}
             </div>
           </ScrollArea>
+          <DrawerFooter className="flex-shrink-0 pt-2 pb-4 px-1">
+            {submitButton}
+          </DrawerFooter>
         </DrawerContent>
       </Drawer>
     );
@@ -241,6 +244,9 @@ export function ReportDrawer({ isOpen, onClose, location }: ReportDrawerProps) {
           <DialogDescription>Ajude outras pessoas a ficarem seguras compartilhando detalhes.</DialogDescription>
         </DialogHeader>
         {formContent}
+        <DialogFooter>
+          {submitButton}
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
