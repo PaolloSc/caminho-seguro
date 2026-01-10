@@ -18,37 +18,58 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-// Custom Icons Generator
+// Custom Icons Generator - Waze-style markers
 const createIcon = (type: string) => {
   let iconComponent;
-  let colorClass;
+  let bgColor;
+  let shadowColor;
 
   switch (type) {
     case 'assedio':
-      iconComponent = <AlertTriangle className="w-5 h-5 text-white" />;
-      colorClass = 'bg-destructive';
+      iconComponent = <AlertTriangle className="w-4 h-4 text-white" />;
+      bgColor = '#ef4444';
+      shadowColor = 'rgba(239, 68, 68, 0.4)';
       break;
     case 'iluminacao_precaria':
-      iconComponent = <Lightbulb className="w-5 h-5 text-white" />;
-      colorClass = 'bg-[hsl(var(--warning))]';
+      iconComponent = <Lightbulb className="w-4 h-4 text-white" />;
+      bgColor = '#f59e0b';
+      shadowColor = 'rgba(245, 158, 11, 0.4)';
       break;
     case 'deserto':
-      iconComponent = <Ghost className="w-5 h-5 text-white" />;
-      colorClass = 'bg-gray-500';
+      iconComponent = <Ghost className="w-4 h-4 text-white" />;
+      bgColor = '#6b7280';
+      shadowColor = 'rgba(107, 114, 128, 0.4)';
       break;
     case 'abrigo_seguro':
-      iconComponent = <Shield className="w-5 h-5 text-white" />;
-      colorClass = 'bg-[hsl(var(--safe))]';
+      iconComponent = <Shield className="w-4 h-4 text-white" />;
+      bgColor = '#22c55e';
+      shadowColor = 'rgba(34, 197, 94, 0.4)';
       break;
     default:
-      iconComponent = <HelpCircle className="w-5 h-5 text-white" />;
-      colorClass = 'bg-primary';
+      iconComponent = <HelpCircle className="w-4 h-4 text-white" />;
+      bgColor = '#8b5cf6';
+      shadowColor = 'rgba(139, 92, 246, 0.4)';
   }
 
   const html = renderToString(
-    <div className={`marker-pin ${colorClass} w-10 h-10 flex items-center justify-center rounded-full shadow-lg border-2 border-white`}>
-      <div className="transform -rotate-45">
-        {iconComponent}
+    <div className="waze-marker" style={{ position: 'relative' }}>
+      <div 
+        style={{
+          width: '36px',
+          height: '36px',
+          backgroundColor: bgColor,
+          borderRadius: '50% 50% 50% 0',
+          transform: 'rotate(-45deg)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: `0 4px 12px ${shadowColor}, 0 2px 4px rgba(0,0,0,0.1)`,
+          border: '3px solid white',
+        }}
+      >
+        <div style={{ transform: 'rotate(45deg)' }}>
+          {iconComponent}
+        </div>
       </div>
     </div>
   );
@@ -56,9 +77,9 @@ const createIcon = (type: string) => {
   return L.divIcon({
     html,
     className: 'custom-marker-icon',
-    iconSize: [40, 40],
-    iconAnchor: [20, 40],
-    popupAnchor: [0, -40]
+    iconSize: [36, 36],
+    iconAnchor: [18, 36],
+    popupAnchor: [0, -36]
   });
 };
 
@@ -89,11 +110,35 @@ function UserLocator({ onLocationFound }: { onLocationFound: (lat: number, lng: 
 
   const userIcon = L.divIcon({
     html: renderToString(
-      <div className="relative w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-md user-location-marker"></div>
+      <div style={{ position: 'relative', width: '24px', height: '24px' }}>
+        <div 
+          style={{
+            position: 'absolute',
+            width: '24px',
+            height: '24px',
+            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+            borderRadius: '50%',
+            animation: 'pulse 2s infinite',
+          }}
+        />
+        <div 
+          style={{
+            position: 'absolute',
+            top: '6px',
+            left: '6px',
+            width: '12px',
+            height: '12px',
+            backgroundColor: '#3b82f6',
+            borderRadius: '50%',
+            border: '3px solid white',
+            boxShadow: '0 2px 8px rgba(59, 130, 246, 0.5)',
+          }}
+        />
+      </div>
     ),
-    className: 'custom-marker-icon',
-    iconSize: [16, 16],
-    iconAnchor: [8, 8]
+    className: 'custom-marker-icon user-location',
+    iconSize: [24, 24],
+    iconAnchor: [12, 12]
   });
 
   return <Marker position={position} icon={userIcon} />;
@@ -127,8 +172,8 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className }: Saf
         zoomControl={false}
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
         />
         
         <UserLocator onLocationFound={(lat, lng) => setMapCenter([lat, lng])} />
