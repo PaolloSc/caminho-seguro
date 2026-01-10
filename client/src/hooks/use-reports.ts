@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
-import { InsertReport, InsertComment } from "@shared/schema";
+import { InsertReport, InsertComment, InsertReportFlag } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
 export function useReports() {
@@ -53,14 +53,14 @@ export function useCreateReport() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.reports.list.path] });
       toast({
-        title: "Report Added",
-        description: "Thank you for helping keep the community safe.",
+        title: "Relato Enviado",
+        description: "Obrigada por ajudar a manter a comunidade segura. Seu relato será exibido em 30 minutos.",
         variant: "default",
       });
     },
     onError: (error) => {
       toast({
-        title: "Error",
+        title: "Erro",
         description: error.message,
         variant: "destructive",
       });
@@ -81,8 +81,12 @@ export function useVerifyReport() {
       });
 
       if (!res.ok) {
-        if (res.status === 401) throw new Error("Please log in to verify reports.");
-        throw new Error("Failed to verify report");
+        if (res.status === 401) throw new Error("Faça login para verificar relatos.");
+        if (res.status === 400) {
+          const data = await res.json();
+          throw new Error(data.message || "Você já verificou este relato");
+        }
+        throw new Error("Erro ao verificar relato");
       }
       return api.reports.verify.responses[200].parse(await res.json());
     },
@@ -90,13 +94,48 @@ export function useVerifyReport() {
       queryClient.invalidateQueries({ queryKey: [api.reports.list.path] });
       queryClient.invalidateQueries({ queryKey: [api.reports.get.path, id] });
       toast({
-        title: "Verified",
-        description: "You've confirmed this report is still relevant.",
+        title: "Verificado",
+        description: "Você confirmou que este relato ainda é relevante.",
       });
     },
     onError: (error) => {
       toast({
-        title: "Error",
+        title: "Erro",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useFlagReport() {
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ reportId, ...data }: InsertReportFlag & { reportId: number }) => {
+      const url = buildUrl(api.flags.create.path, { id: reportId });
+      const res = await fetch(url, {
+        method: api.flags.create.method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        if (res.status === 401) throw new Error("Faça login para denunciar.");
+        throw new Error("Erro ao enviar denúncia");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Denúncia Enviada",
+        description: "Obrigada. Nossa equipe irá analisar este relato.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro",
         description: error.message,
         variant: "destructive",
       });
@@ -141,13 +180,13 @@ export function useCreateComment() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: [api.comments.list.path, variables.reportId] });
       toast({
-        title: "Comment Added",
-        description: "Your comment has been posted.",
+        title: "Comentário Adicionado",
+        description: "Seu comentário foi publicado.",
       });
     },
     onError: (error) => {
       toast({
-        title: "Error",
+        title: "Erro",
         description: error.message,
         variant: "destructive",
       });

@@ -1,8 +1,11 @@
-# SafePath - Community Safety Mapping Platform
+# CaminhoSeguro - Plataforma de Mapeamento de Segurança Comunitária
 
 ## Overview
 
-SafePath is a community-driven safety mapping application that allows users to report and view safety-related incidents and conditions in their area. Users can report harassment incidents, poor lighting areas, deserted locations, and safe havens on an interactive map. The platform encourages community verification of reports and discussion through comments.
+CaminhoSeguro é uma aplicação colaborativa de mapeamento de segurança que permite às usuárias relatar e visualizar incidentes e condições de segurança em sua área. Usuárias podem relatar assédio, iluminação precária, locais desertos e abrigos seguros em um mapa interativo. A plataforma incentiva verificação comunitária e discussão através de comentários.
+
+**Idioma**: Português (Brasil)
+**Público-alvo**: Mulheres brasileiras
 
 ## User Preferences
 
@@ -48,6 +51,33 @@ Database tables:
 - `sessions` - Session storage (required for Replit Auth)
 - `reports` - Safety reports with location, type, severity, and verification count
 - `comments` - User comments on reports
+- `report_flags` - Denúncias de relatos falsos/inadequados
+- `report_verifications` - Registro de verificações por usuária (persistido)
+
+## Security Measures
+
+### Rate Limiting
+- 10 reports per hour per IP
+- 5 reports per day per user
+- 50 verifications per hour per IP
+- 100 general requests per 15 minutes
+
+### Privacy Protection
+- **Location obfuscation**: Coordinates randomized ±50 meters
+- **Display delay**: Reports appear 30 minutes after creation
+- **User anonymization**: UserId removed from all API responses
+- **Data sanitization**: All user input sanitized with sanitize-html
+
+### Abuse Prevention
+- Duplicate verification prevention (persisted in database)
+- Report flagging system for community moderation
+- Content validation and type restrictions
+
+### Legal Compliance (Brazil)
+- LGPD-compliant Privacy Policy page
+- Terms of Use page
+- DPO contact information
+- User rights exercise workflow documented
 
 ### Shared Code
 The `shared/` directory contains code used by both frontend and backend:

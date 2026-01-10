@@ -30,8 +30,8 @@ export default function Home() {
   const handleAddReport = (lat: number, lng: number) => {
     if (!isAuthenticated) {
       toast({
-        title: "Authentication Required",
-        description: "Please log in to add a report.",
+        title: "Login Necessário",
+        description: "Faça login para adicionar um relato.",
         variant: "destructive",
       });
       return;
@@ -70,7 +70,7 @@ export default function Home() {
                 >
                   {isAuthenticated ? (
                     <Avatar className="w-8 h-8 border-2 border-white/20">
-                      <AvatarImage src={user?.profileImageUrl} />
+                      <AvatarImage src={user?.profileImageUrl || undefined} />
                       <AvatarFallback>{user?.firstName?.[0] || 'U'}</AvatarFallback>
                     </Avatar>
                   ) : (
@@ -91,9 +91,11 @@ export default function Home() {
 
                   <div className="flex-1 space-y-4">
                     {!isAuthenticated ? (
-                      <Button asChild className="w-full" size="lg">
-                        <a href="/api/login">Entrar para Contribuir</a>
-                      </Button>
+                      <a href="/api/login" className="w-full">
+                        <Button className="w-full" size="lg">
+                          Entrar para Contribuir
+                        </Button>
+                      </a>
                     ) : (
                       <div className="space-y-2">
                         <div className="p-4 bg-muted/30 rounded-xl border border-border">
@@ -128,18 +130,31 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {isAuthenticated && (
-                    <div className="pt-6 border-t border-border">
+                  <div className="pt-6 border-t border-border space-y-2">
+                    <div className="flex gap-2 text-xs">
+                      <Link href="/termos">
+                        <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" data-testid="link-terms">
+                          Termos de Uso
+                        </Button>
+                      </Link>
+                      <Link href="/privacidade">
+                        <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" data-testid="link-privacy">
+                          Privacidade
+                        </Button>
+                      </Link>
+                    </div>
+                    {isAuthenticated && (
                       <Button 
                         variant="ghost" 
                         className="w-full justify-start text-muted-foreground hover:text-destructive"
                         onClick={() => logout()}
+                        data-testid="button-logout"
                       >
                         <LogOut className="w-4 h-4 mr-2" />
                         Sair
                       </Button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </SheetContent>
             </Sheet>

@@ -4,11 +4,11 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Report } from "@shared/schema";
 import { format } from "date-fns";
-import { Shield, AlertTriangle, Lightbulb, Ghost, HelpCircle, MapPin, ThumbsUp, MessageCircle } from "lucide-react";
+import { Shield, AlertTriangle, Lightbulb, Ghost, HelpCircle, MapPin, ThumbsUp, MessageCircle, Flag } from "lucide-react";
 import { renderToString } from "react-dom/server";
 import { Button } from "./ui/button-custom";
 import { useAuth } from "@/hooks/use-auth";
-import { useVerifyReport } from "@/hooks/use-reports";
+import { useVerifyReport, useFlagReport } from "@/hooks/use-reports";
 
 // Fix for default markers
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -109,7 +109,13 @@ interface SafetyMapProps {
 export function SafetyMap({ reports, onAddReport, onViewReport, className }: SafetyMapProps) {
   const { user } = useAuth();
   const { mutate: verifyReport, isPending: isVerifying } = useVerifyReport();
+  const { mutate: flagReport, isPending: isFlagging } = useFlagReport();
   const [mapCenter, setMapCenter] = useState<[number, number]>([-23.5505, -46.6333]); // Default SP
+  
+  const handleFlag = (reportId: number) => {
+    if (!user) return;
+    flagReport({ reportId, reason: 'falso' });
+  };
 
   return (
     <div className={className}>
@@ -167,14 +173,30 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className }: Saf
                         verifyReport(report.id);
                       }}
                       disabled={isVerifying}
+                      data-testid={`button-verify-${report.id}`}
                     >
                       <ThumbsUp className="w-4 h-4" />
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleFlag(report.id);
+                      }}
+                      disabled={isFlagging || !user}
+                      title="Denunciar relato falso"
+                      data-testid={`button-flag-${report.id}`}
+                    >
+                      <Flag className="w-4 h-4" />
                     </Button>
                     <Button 
                       size="sm" 
                       variant="primary" 
                       className="h-8 px-3 text-xs"
                       onClick={() => onViewReport(report.id)}
+                      data-testid={`button-details-${report.id}`}
                     >
                       Detalhes
                     </Button>

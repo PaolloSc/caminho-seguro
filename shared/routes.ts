@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertReportSchema, reports, comments, insertCommentSchema } from './schema';
+import { insertReportSchema, reports, comments, insertCommentSchema, reportFlags, insertReportFlagSchema } from './schema';
 
 export const errorSchemas = {
   validation: z.object({
@@ -72,6 +72,19 @@ export const api = {
         200: z.array(z.custom<typeof comments.$inferSelect>()),
       },
     }
+  },
+  flags: {
+    create: {
+      method: 'POST' as const,
+      path: '/api/reports/:id/flag',
+      input: insertReportFlagSchema,
+      responses: {
+        201: z.custom<typeof reportFlags.$inferSelect>(),
+        400: errorSchemas.validation,
+        401: errorSchemas.unauthorized,
+        404: errorSchemas.notFound,
+      },
+    },
   }
 };
 
