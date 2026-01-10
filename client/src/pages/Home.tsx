@@ -82,7 +82,7 @@ export default function Home() {
   };
 
   return (
-    <div className="h-screen w-full flex flex-col overflow-hidden relative bg-background safe-top safe-bottom">
+    <div className="h-screen w-full flex flex-col relative bg-background safe-top safe-bottom overflow-hidden">
       {/* Top Navigation Bar */}
       <header className="absolute top-0 left-0 right-0 z-20 p-4 pointer-events-none safe-top">
         <div className="max-w-7xl mx-auto flex items-center justify-between pointer-events-auto">
