@@ -4,12 +4,14 @@ import {
   comments,
   reportFlags,
   reportVerifications,
+  users,
   type Report,
   type InsertReport,
   type Comment,
   type InsertComment,
   type ReportFlag,
-  type InsertReportFlag
+  type InsertReportFlag,
+  type User
 } from "@shared/schema";
 import { eq, sql, lt, and } from "drizzle-orm";
 
@@ -27,6 +29,8 @@ export interface IStorage {
   
   createReportFlag(flag: InsertReportFlag & { userId: string; reportId: number }): Promise<ReportFlag>;
   getUserReportCount(userId: string, hoursAgo: number): Promise<number>;
+  
+  updateUserName(userId: string, firstName: string, lastName?: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -205,6 +209,20 @@ export class DatabaseStorage implements IStorage {
         sql`${reports.createdAt} > ${since}`
       ));
     return Number(result[0]?.count || 0);
+  }
+
+  async updateUserName(userId: string, firstName: string, lastName?: string): Promise<boolean> {
+    const updateData: { firstName: string; lastName?: string } = { firstName };
+    if (lastName !== undefined) {
+      updateData.lastName = lastName;
+    }
+    
+    const result = await db
+      .update(users)
+      .set(updateData)
+      .where(eq(users.id, userId));
+    
+    return true;
   }
 }
 

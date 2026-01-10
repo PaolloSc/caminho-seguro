@@ -269,6 +269,26 @@ export async function registerRoutes(
     }
   });
 
+  // === USUÁRIO ===
+  app.patch(api.user.updateName.path, isAuthenticated, async (req, res) => {
+    try {
+      const input = api.user.updateName.input.parse(req.body);
+      const user = req.user as any;
+      
+      await storage.updateUserName(user.claims.sub, input.firstName, input.lastName);
+      
+      res.json({ success: true });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
   // === DADOS INICIAIS (desenvolvimento) ===
   const existing = await storage.getReports(0); // Sem delay para seed
   if (existing.length === 0) {

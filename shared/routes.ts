@@ -94,6 +94,32 @@ export const api = {
         404: errorSchemas.notFound,
       },
     },
+  },
+  user: {
+    updateName: {
+      method: 'PATCH' as const,
+      path: '/api/user/name',
+      input: z.object({
+        firstName: z.string().min(2).max(50),
+        lastName: z.string().min(2).max(50).optional(),
+      }),
+      responses: {
+        200: z.object({ success: z.boolean() }),
+        400: errorSchemas.validation,
+        401: errorSchemas.unauthorized,
+      },
+    },
+    requestPasswordReset: {
+      method: 'POST' as const,
+      path: '/api/user/password-reset',
+      input: z.object({
+        email: z.string().email(),
+      }),
+      responses: {
+        200: z.object({ message: z.string() }),
+        400: errorSchemas.validation,
+      },
+    },
   }
 };
 

@@ -3,13 +3,16 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button-custom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { 
   ArrowLeft, 
   X,
   Pencil,
   ChevronRight,
   LogOut,
-  Trash2
+  Trash2,
+  Key
 } from "lucide-react";
 import {
   AlertDialog,
@@ -22,12 +25,61 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 
 export default function Configuracoes() {
   const { user, isAuthenticated, logout } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  const [showEditName, setShowEditName] = useState(false);
+  const [showPasswordInfo, setShowPasswordInfo] = useState(false);
+  const [firstName, setFirstName] = useState(user?.firstName || "");
+  const [lastName, setLastName] = useState(user?.lastName || "");
+
+  const updateNameMutation = useMutation({
+    mutationFn: async (data: { firstName: string; lastName?: string }) => {
+      return await apiRequest("PATCH", "/api/user/name", data);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Nome atualizado",
+        description: "Seu nome foi alterado com sucesso.",
+      });
+      setShowEditName(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar seu nome. Tente novamente.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleUpdateName = () => {
+    if (firstName.length < 2) {
+      toast({
+        title: "Nome muito curto",
+        description: "O nome precisa ter pelo menos 2 caracteres.",
+        variant: "destructive",
+      });
+      return;
+    }
+    updateNameMutation.mutate({ firstName, lastName: lastName || undefined });
+  };
 
   const handleDeleteAccount = () => {
     toast({
@@ -89,6 +141,12 @@ export default function Configuracoes() {
           <Button 
             size="icon" 
             className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary text-primary-foreground shadow-md"
+            onClick={() => {
+              setFirstName(user?.firstName || "");
+              setLastName(user?.lastName || "");
+              setShowEditName(true);
+            }}
+            data-testid="button-edit-photo"
           >
             <Pencil className="w-4 h-4" />
           </Button>
@@ -100,9 +158,22 @@ export default function Configuracoes() {
           Dados da conta
         </p>
 
-        <div className="py-4 px-4">
-          <p className="text-sm text-muted-foreground">Nome completo</p>
-          <p className="font-medium mt-1">{userName}</p>
+        <div 
+          className="flex items-center justify-between py-4 px-4 hover-elevate cursor-pointer"
+          onClick={() => {
+            setFirstName(user?.firstName || "");
+            setLastName(user?.lastName || "");
+            setShowEditName(true);
+          }}
+          data-testid="button-edit-name"
+        >
+          <div>
+            <p className="text-sm text-muted-foreground">Nome completo</p>
+            <p className="font-medium mt-1">{userName}</p>
+          </div>
+          <Button variant="ghost" className="text-primary text-sm">
+            Editar
+          </Button>
         </div>
 
         <Separator />
@@ -132,9 +203,6 @@ export default function Configuracoes() {
               <p className="font-medium">{user?.email || 'Não informado'}</p>
             </div>
           </div>
-          <Button variant="ghost" className="text-primary text-sm">
-            Editar
-          </Button>
         </div>
 
         <Separator />
@@ -146,27 +214,32 @@ export default function Configuracoes() {
 
         <Separator />
 
-        <div className="flex items-center justify-between py-4 px-4">
-          <div>
-            <p className="text-sm text-muted-foreground">Senha</p>
-            <p className="font-medium mt-1 text-muted-foreground">••••••••</p>
+        <div 
+          className="flex items-center justify-between py-4 px-4 hover-elevate cursor-pointer"
+          onClick={() => setShowPasswordInfo(true)}
+          data-testid="button-password-info"
+        >
+          <div className="flex items-center gap-3">
+            <Key className="w-5 h-5 text-muted-foreground" />
+            <div>
+              <p className="text-sm text-muted-foreground">Senha</p>
+              <p className="font-medium text-muted-foreground">••••••••</p>
+            </div>
           </div>
-          <a href="mailto:suporte@caminhoseguro.com.br?subject=Recuperação de Senha">
-            <Button variant="ghost" className="text-primary text-sm">
-              Recuperar
-            </Button>
-          </a>
+          <Button variant="ghost" className="text-primary text-sm">
+            Recuperar
+          </Button>
         </div>
 
         <Separator />
 
         <p className="text-xs text-muted-foreground px-4 py-3">
-          Outras usuárias podem ver seu nome de usuário
+          Sua senha é gerenciada pelo provedor de login (Google/Replit)
         </p>
 
         <Separator />
 
-        <div className="flex items-center justify-between py-4 px-4 opacity-50">
+        <div className="flex items-center justify-between py-4 px-4 opacity-50 cursor-not-allowed">
           <p className="font-medium">Avançado</p>
           <ChevronRight className="w-5 h-5 text-muted-foreground" />
         </div>
@@ -217,6 +290,79 @@ export default function Configuracoes() {
           </AlertDialogContent>
         </AlertDialog>
       </div>
+
+      <Dialog open={showEditName} onOpenChange={setShowEditName}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar nome</DialogTitle>
+            <DialogDescription>
+              Altere seu nome de exibição no aplicativo.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="firstName">Nome</Label>
+              <Input
+                id="firstName"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="Seu nome"
+                data-testid="input-first-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="lastName">Sobrenome (opcional)</Label>
+              <Input
+                id="lastName"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Seu sobrenome"
+                data-testid="input-last-name"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditName(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleUpdateName}
+              disabled={updateNameMutation.isPending}
+              data-testid="button-save-name"
+            >
+              {updateNameMutation.isPending ? "Salvando..." : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showPasswordInfo} onOpenChange={setShowPasswordInfo}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Recuperação de senha</DialogTitle>
+            <DialogDescription>
+              Como você fez login com Google ou Replit, sua senha é gerenciada diretamente pelo provedor.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Para recuperar ou alterar sua senha:
+            </p>
+            <ul className="list-disc list-inside text-sm space-y-2 text-muted-foreground">
+              <li>Se você usa <strong>Google</strong>: acesse myaccount.google.com</li>
+              <li>Se você usa <strong>Replit</strong>: acesse replit.com/account</li>
+            </ul>
+            <p className="text-sm text-muted-foreground">
+              Lá você poderá alterar sua senha e configurações de segurança.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setShowPasswordInfo(false)}>
+              Entendi
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
