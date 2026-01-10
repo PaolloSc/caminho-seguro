@@ -2,7 +2,6 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, CircleMarker } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import "leaflet-rotate";
 import "leaflet.heat";
 import { Report } from "@shared/schema";
 import { format } from "date-fns";
@@ -571,38 +570,6 @@ function HeatmapLayer({ reports, showHeatmap }: { reports: Report[]; showHeatmap
   return null;
 }
 
-// Botão de toggle para Heatmap
-function HeatmapToggleButton({ showHeatmap, onToggle }: { showHeatmap: boolean; onToggle: () => void }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (containerRef.current) {
-      L.DomEvent.disableClickPropagation(containerRef.current);
-      L.DomEvent.disableScrollPropagation(containerRef.current);
-    }
-  }, []);
-
-  return (
-    <div 
-      ref={containerRef}
-      className="absolute top-4 right-4 z-[1000]"
-    >
-      <button
-        onClick={onToggle}
-        className={`w-10 h-10 rounded-full shadow-lg flex items-center justify-center border transition-all
-          ${showHeatmap 
-            ? 'bg-orange-600 border-orange-400 text-white' 
-            : 'bg-gray-900/90 border-gray-700 text-white hover:bg-gray-800'
-          }`}
-        title={showHeatmap ? "Ocultar mapa de calor" : "Mostrar mapa de calor"}
-        data-testid="button-toggle-heatmap"
-      >
-        <Flame className="w-5 h-5" />
-      </button>
-    </div>
-  );
-}
-
 interface SafetyMapProps {
   reports: Report[];
   onAddReport: (lat: number, lng: number) => void;
@@ -643,12 +610,6 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
         className="w-full h-full z-0"
         zoomControl={false}
         ref={mapRef}
-        {...{
-          rotate: true,
-          touchRotate: true,
-          shiftKeyRotate: true,
-          bearing: 0
-        } as any}
       >
         <TileLayer
           key={isNightMode ? 'night' : 'day'}
@@ -674,7 +635,6 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
         <POILayer showPOIs={true} />
         
         <HeatmapLayer reports={reports} showHeatmap={showHeatmap} />
-        <HeatmapToggleButton showHeatmap={showHeatmap} onToggle={() => setShowHeatmap(!showHeatmap)} />
         
         <MapEvents onMapClick={onAddReport} />
 
@@ -772,6 +732,22 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
           </Marker>
         ))}
       </MapContainer>
+      
+      {/* Botão do Heatmap - fora do MapContainer */}
+      <div className="absolute top-20 right-4 z-[500]">
+        <button
+          onClick={() => setShowHeatmap(!showHeatmap)}
+          className={`w-11 h-11 rounded-full shadow-lg flex items-center justify-center border transition-all
+            ${showHeatmap 
+              ? 'bg-orange-600 border-orange-400 text-white' 
+              : 'bg-card/90 backdrop-blur-md border-border text-foreground hover:bg-card'
+            }`}
+          title={showHeatmap ? "Ocultar mapa de calor" : "Mostrar mapa de calor"}
+          data-testid="button-toggle-heatmap"
+        >
+          <Flame className="w-5 h-5" />
+        </button>
+      </div>
     </div>
   );
 }
