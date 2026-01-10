@@ -6,6 +6,10 @@ import { z } from "zod";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 import rateLimit from "express-rate-limit";
 import sanitizeHtml from "sanitize-html";
+import { sendNewReportNotification } from "./email";
+
+// Email do administrador para receber notificações (configurado via variável de ambiente)
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 
 // === SEGURANÇA: Rate Limiters ===
 const createReportLimiter = rateLimit({
@@ -124,6 +128,17 @@ export async function registerRoutes(
         lng: obfuscated.lng,
         userId: user.claims.sub,
       });
+      
+      // Enviar notificação por email para o administrador (se configurado)
+      if (ADMIN_EMAIL) {
+        sendNewReportNotification(ADMIN_EMAIL, {
+          type: input.type,
+          description: sanitizedDescription,
+          severity: input.severity || 1,
+          lat: obfuscated.lat,
+          lng: obfuscated.lng,
+        }).catch(err => console.error('Email notification failed:', err));
+      }
       
       res.status(201).json({
         ...report,
