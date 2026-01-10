@@ -69,9 +69,9 @@ export async function registerRoutes(
 
   // === RELATÓRIOS ===
   
-  // Lista de relatórios (com atraso de 30min para segurança)
+  // Lista de relatórios (delay desativado para testes)
   app.get(api.reports.list.path, async (req, res) => {
-    const reports = await storage.getReports(30); // 30 min delay
+    const reports = await storage.getReports(0); // Sem delay para testes
     
     // Remove userId dos relatórios para anonimato
     const safeReports = reports.map(r => ({
