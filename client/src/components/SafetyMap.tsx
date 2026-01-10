@@ -98,27 +98,100 @@ function MapEvents({ onMapClick }: { onMapClick: (lat: number, lng: number) => v
   return null;
 }
 
-// Component to locate user
-function UserLocator({ onLocationFound }: { onLocationFound: (lat: number, lng: number) => void }) {
+// Component to locate user with continuous tracking and heading
+function UserLocator({ 
+  onLocationFound, 
+  isNavigationMode,
+  onHeadingChange 
+}: { 
+  onLocationFound: (lat: number, lng: number) => void;
+  isNavigationMode: boolean;
+  onHeadingChange?: (heading: number) => void;
+}) {
   const map = useMap();
   const [position, setPosition] = useState<{lat: number, lng: number} | null>(null);
+  const [heading, setHeading] = useState<number>(0);
+  const watchIdRef = useRef<number | null>(null);
 
   useEffect(() => {
-    map.locate().on("locationfound", function (e) {
-      setPosition(e.latlng);
-      map.flyTo(e.latlng, 15);
-      onLocationFound(e.latlng.lat, e.latlng.lng);
-    });
-  }, [map]);
+    if (isNavigationMode) {
+      // Continuous tracking mode
+      if (navigator.geolocation) {
+        watchIdRef.current = navigator.geolocation.watchPosition(
+          (pos) => {
+            const newPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            setPosition(newPos);
+            onLocationFound(newPos.lat, newPos.lng);
+            
+            // Use heading from GPS if available (when moving)
+            if (pos.coords.heading !== null && !isNaN(pos.coords.heading)) {
+              setHeading(pos.coords.heading);
+              onHeadingChange?.(pos.coords.heading);
+            }
+            
+            // Center map on user
+            map.setView([newPos.lat, newPos.lng], map.getZoom(), { animate: true });
+          },
+          (err) => console.error('Geolocation error:', err),
+          { enableHighAccuracy: true, maximumAge: 1000, timeout: 5000 }
+        );
+      }
+      
+      // Device orientation for compass heading when stationary
+      // Permission is already requested in NavigationButton click handler for iOS
+      const handleOrientation = (event: DeviceOrientationEvent) => {
+        if (event.alpha !== null) {
+          const compassHeading = 360 - event.alpha;
+          setHeading(compassHeading);
+          onHeadingChange?.(compassHeading);
+        }
+      };
+      
+      window.addEventListener('deviceorientation', handleOrientation);
+      
+      return () => {
+        if (watchIdRef.current !== null) {
+          navigator.geolocation.clearWatch(watchIdRef.current);
+        }
+        window.removeEventListener('deviceorientation', handleOrientation);
+      };
+    } else {
+      // Single location fetch
+      map.locate().on("locationfound", function (e) {
+        setPosition(e.latlng);
+        map.flyTo(e.latlng, 15);
+        onLocationFound(e.latlng.lat, e.latlng.lng);
+      });
+    }
+  }, [map, isNavigationMode]);
 
   if (!position) return null;
 
+  // Create user icon with direction arrow when in navigation mode
   const userIcon = L.divIcon({
     html: renderToString(
-      <div style={{ position: 'relative', width: '24px', height: '24px' }}>
+      <div style={{ position: 'relative', width: '40px', height: '40px' }}>
+        {isNavigationMode && (
+          <div 
+            style={{
+              position: 'absolute',
+              top: '-8px',
+              left: '50%',
+              transform: `translateX(-50%) rotate(${heading}deg)`,
+              width: '0',
+              height: '0',
+              borderLeft: '10px solid transparent',
+              borderRight: '10px solid transparent',
+              borderBottom: '20px solid #3b82f6',
+              transformOrigin: 'center 28px',
+            }}
+          />
+        )}
         <div 
           style={{
             position: 'absolute',
+            top: '8px',
+            left: '8px',
             width: '24px',
             height: '24px',
             backgroundColor: 'rgba(59, 130, 246, 0.2)',
@@ -129,8 +202,8 @@ function UserLocator({ onLocationFound }: { onLocationFound: (lat: number, lng: 
         <div 
           style={{
             position: 'absolute',
-            top: '6px',
-            left: '6px',
+            top: '14px',
+            left: '14px',
             width: '12px',
             height: '12px',
             backgroundColor: '#3b82f6',
@@ -142,15 +215,25 @@ function UserLocator({ onLocationFound }: { onLocationFound: (lat: number, lng: 
       </div>
     ),
     className: 'custom-marker-icon user-location',
-    iconSize: [24, 24],
-    iconAnchor: [12, 12]
+    iconSize: [40, 40],
+    iconAnchor: [20, 20]
   });
 
   return <Marker position={position} icon={userIcon} />;
 }
 
-// Component to recenter map - Waze style (bottom left)
-function RecenterButton({ userPosition }: { userPosition: { lat: number; lng: number } | null }) {
+// Navigation button - Waze style (bottom left)
+function NavigationButton({ 
+  userPosition, 
+  isNavigationMode, 
+  onToggleNavigation,
+  onRequestPermission
+}: { 
+  userPosition: { lat: number; lng: number } | null;
+  isNavigationMode: boolean;
+  onToggleNavigation: (granted: boolean) => void;
+  onRequestPermission?: () => void;
+}) {
   const map = useMap();
   const containerRef = useRef<HTMLDivElement>(null);
   
@@ -161,13 +244,32 @@ function RecenterButton({ userPosition }: { userPosition: { lat: number; lng: nu
     }
   }, []);
   
-  const handleRecenter = () => {
-    if (userPosition) {
-      map.flyTo([userPosition.lat, userPosition.lng], 16, { duration: 1 });
+  const handleClick = async () => {
+    if (isNavigationMode) {
+      // Turn off navigation mode
+      onToggleNavigation(false);
+      // Reset map bearing
+      if ((map as any).setBearing) {
+        (map as any).setBearing(0);
+      }
     } else {
-      map.locate().on("locationfound", function (e) {
-        map.flyTo(e.latlng, 16, { duration: 1 });
-      });
+      // Request DeviceOrientation permission on iOS 13+ (must be in click handler)
+      let permissionGranted = true;
+      if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
+        try {
+          const response = await (DeviceOrientationEvent as any).requestPermission();
+          permissionGranted = response === 'granted';
+        } catch (err) {
+          console.error('DeviceOrientation permission error:', err);
+          permissionGranted = false;
+        }
+      }
+      
+      // Turn on navigation mode
+      if (userPosition) {
+        map.flyTo([userPosition.lat, userPosition.lng], 16, { duration: 1 });
+      }
+      onToggleNavigation(permissionGranted);
     }
   };
 
@@ -179,15 +281,25 @@ function RecenterButton({ userPosition }: { userPosition: { lat: number; lng: nu
     >
       <div className="leaflet-control">
         <button
-          onClick={handleRecenter}
-          className="bg-gray-900/90 backdrop-blur w-12 h-12 rounded-full shadow-xl flex items-center justify-center hover:bg-gray-800 transition-all duration-200 border border-gray-700"
-          title="Centralizar na minha localização"
-          data-testid="button-recenter"
+          onClick={handleClick}
+          className={`backdrop-blur w-12 h-12 rounded-full shadow-xl flex items-center justify-center transition-all duration-200 border ${
+            isNavigationMode 
+              ? 'bg-blue-600 border-blue-400 hover:bg-blue-500' 
+              : 'bg-gray-900/90 border-gray-700 hover:bg-gray-800'
+          }`}
+          title={isNavigationMode ? "Desativar navegação" : "Ativar navegação"}
+          data-testid="button-navigation"
         >
-          <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="3" />
-            <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
-          </svg>
+          {isNavigationMode ? (
+            <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/>
+            </svg>
+          ) : (
+            <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
+            </svg>
+          )}
         </button>
       </div>
     </div>
@@ -215,10 +327,18 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
   const { mutate: flagReport, isPending: isFlagging } = useFlagReport();
   const [mapCenter, setMapCenter] = useState<[number, number]>([-23.5505, -46.6333]); // Default SP
   const [userPosition, setUserPosition] = useState<{ lat: number; lng: number } | null>(null);
+  const [isNavigationMode, setIsNavigationMode] = useState(false);
+  const mapRef = useRef<L.Map | null>(null);
   
   const handleFlag = (reportId: number) => {
     if (!user) return;
     flagReport({ reportId, reason: 'falso' });
+  };
+
+  const handleHeadingChange = (heading: number) => {
+    if (mapRef.current && isNavigationMode && (mapRef.current as any).setBearing) {
+      (mapRef.current as any).setBearing(-heading);
+    }
   };
 
   const tileUrl = isNightMode ? TILE_URLS.night : TILE_URLS.day;
@@ -230,6 +350,7 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
         zoom={13} 
         className="w-full h-full z-0"
         zoomControl={false}
+        ref={mapRef}
         {...{
           rotate: true,
           touchRotate: true,
@@ -243,12 +364,20 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
           url={tileUrl}
         />
         
-        <UserLocator onLocationFound={(lat, lng) => {
-          setMapCenter([lat, lng]);
-          setUserPosition({ lat, lng });
-        }} />
+        <UserLocator 
+          onLocationFound={(lat, lng) => {
+            setMapCenter([lat, lng]);
+            setUserPosition({ lat, lng });
+          }}
+          isNavigationMode={isNavigationMode}
+          onHeadingChange={handleHeadingChange}
+        />
         
-        <RecenterButton userPosition={userPosition} />
+        <NavigationButton 
+          userPosition={userPosition} 
+          isNavigationMode={isNavigationMode}
+          onToggleNavigation={(granted) => setIsNavigationMode(!isNavigationMode)}
+        />
         
         <MapEvents onMapClick={onAddReport} />
 
