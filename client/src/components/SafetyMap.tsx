@@ -148,7 +148,9 @@ function UserLocator({ onLocationFound }: { onLocationFound: (lat: number, lng: 
 function RecenterButton({ userPosition }: { userPosition: { lat: number; lng: number } | null }) {
   const map = useMap();
   
-  const handleRecenter = () => {
+  const handleRecenter = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
     if (userPosition) {
       map.flyTo([userPosition.lat, userPosition.lng], 16, { duration: 1 });
     } else {
@@ -159,10 +161,15 @@ function RecenterButton({ userPosition }: { userPosition: { lat: number; lng: nu
   };
 
   return (
-    <div className="leaflet-bottom leaflet-right" style={{ marginBottom: '100px', marginRight: '10px' }}>
-      <div className="leaflet-control">
+    <div 
+      className="leaflet-bottom leaflet-right" 
+      style={{ marginBottom: '100px', marginRight: '10px' }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="leaflet-control" onClick={(e) => e.stopPropagation()}>
         <button
           onClick={handleRecenter}
+          onMouseDown={(e) => e.stopPropagation()}
           className="bg-white w-12 h-12 rounded-full shadow-xl flex items-center justify-center hover:scale-105 transition-all duration-200 border-2 border-blue-500"
           title="Centralizar na minha localização"
           data-testid="button-recenter"
@@ -181,11 +188,28 @@ function RecenterButton({ userPosition }: { userPosition: { lat: number; lng: nu
 function ZoomControls() {
   const map = useMap();
   
+  const handleZoomIn = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    map.zoomIn();
+  };
+
+  const handleZoomOut = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    map.zoomOut();
+  };
+  
   return (
-    <div className="leaflet-top leaflet-right" style={{ marginTop: '80px', marginRight: '10px' }}>
-      <div className="leaflet-control flex flex-col gap-1">
+    <div 
+      className="leaflet-top leaflet-right" 
+      style={{ marginTop: '80px', marginRight: '10px' }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="leaflet-control flex flex-col gap-1" onClick={(e) => e.stopPropagation()}>
         <button
-          onClick={() => map.zoomIn()}
+          onClick={handleZoomIn}
+          onMouseDown={(e) => e.stopPropagation()}
           className="bg-white/90 backdrop-blur w-10 h-10 rounded-lg shadow-lg flex items-center justify-center hover:bg-white transition-colors text-gray-700 font-bold text-xl"
           title="Aproximar"
           data-testid="button-zoom-in"
@@ -193,7 +217,8 @@ function ZoomControls() {
           +
         </button>
         <button
-          onClick={() => map.zoomOut()}
+          onClick={handleZoomOut}
+          onMouseDown={(e) => e.stopPropagation()}
           className="bg-white/90 backdrop-blur w-10 h-10 rounded-lg shadow-lg flex items-center justify-center hover:bg-white transition-colors text-gray-700 font-bold text-xl"
           title="Afastar"
           data-testid="button-zoom-out"
@@ -205,14 +230,21 @@ function ZoomControls() {
   );
 }
 
+// Tile URLs for day/night modes
+const TILE_URLS = {
+  day: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+  night: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+};
+
 interface SafetyMapProps {
   reports: Report[];
   onAddReport: (lat: number, lng: number) => void;
   onViewReport: (id: number) => void;
   className?: string;
+  isNightMode?: boolean;
 }
 
-export function SafetyMap({ reports, onAddReport, onViewReport, className }: SafetyMapProps) {
+export function SafetyMap({ reports, onAddReport, onViewReport, className, isNightMode = false }: SafetyMapProps) {
   const { user } = useAuth();
   const { mutate: verifyReport, isPending: isVerifying } = useVerifyReport();
   const { mutate: downvoteReport, isPending: isDownvoting } = useDownvoteReport();
@@ -225,6 +257,8 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className }: Saf
     flagReport({ reportId, reason: 'falso' });
   };
 
+  const tileUrl = isNightMode ? TILE_URLS.night : TILE_URLS.day;
+
   return (
     <div className={className}>
       <MapContainer 
@@ -234,8 +268,9 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className }: Saf
         zoomControl={false}
       >
         <TileLayer
+          key={isNightMode ? 'night' : 'day'}
           attribution='&copy; <a href="https://carto.com/">CARTO</a>'
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          url={tileUrl}
         />
         
         <UserLocator onLocationFound={(lat, lng) => {

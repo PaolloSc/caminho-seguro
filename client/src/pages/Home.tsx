@@ -222,6 +222,7 @@ export default function Home() {
           onAddReport={handleAddReport}
           onViewReport={(id) => setSelectedReportId(id)}
           className="w-full h-full"
+          isNightMode={isDarkMode}
         />
         
         {/* Floating Action Button for Reporting (Mobile) */}
