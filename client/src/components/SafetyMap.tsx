@@ -422,7 +422,7 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
     <div className={`relative w-full h-full overflow-hidden ${className}`}>
       <MapContainer
         center={[-19.8095, -43.9345]}
-        zoom={16}
+        zoom={18}
         scrollWheelZoom={true}
         className="w-full h-full"
         ref={setMap}
