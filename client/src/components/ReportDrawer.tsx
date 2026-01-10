@@ -7,9 +7,60 @@ import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useCreateReport } from "@/hooks/use-reports";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AlertTriangle, Lightbulb, Ghost, Shield, MapPin, Loader2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+
+// Geocodificação reversa usando Nominatim (OpenStreetMap)
+async function reverseGeocode(lat: number, lng: number): Promise<string> {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1&accept-language=pt-BR`,
+      {
+        headers: {
+          'User-Agent': 'CaminhoSeguro/1.0'
+        }
+      }
+    );
+    
+    if (!response.ok) throw new Error('Geocoding failed');
+    
+    const data = await response.json();
+    const address = data.address;
+    
+    // Monta o endereço no formato brasileiro
+    const parts: string[] = [];
+    
+    // Número da casa (se disponível)
+    if (address.house_number) {
+      parts.push(address.house_number);
+    }
+    
+    // Nome da rua
+    const street = address.road || address.pedestrian || address.footway || address.street;
+    if (street) {
+      if (parts.length > 0) {
+        parts.push('-');
+      }
+      parts.push(street);
+    }
+    
+    // Bairro
+    if (address.suburb || address.neighbourhood) {
+      parts.push(address.suburb || address.neighbourhood);
+    }
+    
+    // Cidade
+    if (address.city || address.town || address.municipality) {
+      parts.push(address.city || address.town || address.municipality);
+    }
+    
+    return parts.length > 0 ? parts.join(', ') : `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+  } catch (error) {
+    console.error('Reverse geocoding error:', error);
+    return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+  }
+}
 
 interface ReportDrawerProps {
   isOpen: boolean;
@@ -24,6 +75,19 @@ export function ReportDrawer({ isOpen, onClose, location }: ReportDrawerProps) {
   const [type, setType] = useState<string>("assedio");
   const [description, setDescription] = useState("");
   const [severity, setSeverity] = useState([3]);
+  const [address, setAddress] = useState<string>("");
+  const [isLoadingAddress, setIsLoadingAddress] = useState(false);
+
+  // Busca o endereço quando a localização muda
+  useEffect(() => {
+    if (location && isOpen) {
+      setIsLoadingAddress(true);
+      setAddress("");
+      reverseGeocode(location.lat, location.lng)
+        .then(addr => setAddress(addr))
+        .finally(() => setIsLoadingAddress(false));
+    }
+  }, [location?.lat, location?.lng, isOpen]);
 
   const handleSubmit = () => {
     if (!location) return;
@@ -47,9 +111,18 @@ export function ReportDrawer({ isOpen, onClose, location }: ReportDrawerProps) {
 
   const formContent = (
     <div className="space-y-6 py-4">
-      <div className="bg-muted/50 p-3 rounded-lg flex items-center gap-3 text-sm text-muted-foreground">
-        <MapPin className="w-4 h-4 text-primary" />
-        <span>Local selecionado: {location?.lat.toFixed(4)}, {location?.lng.toFixed(4)}</span>
+      <div className="bg-muted/50 p-3 rounded-lg flex items-center gap-3 text-sm">
+        <MapPin className="w-5 h-5 text-primary flex-shrink-0" />
+        <div className="flex-1 min-w-0">
+          {isLoadingAddress ? (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Buscando endereço...</span>
+            </div>
+          ) : (
+            <span className="font-medium text-foreground truncate block">{address || 'Local selecionado'}</span>
+          )}
+        </div>
       </div>
 
       <div className="space-y-2">
