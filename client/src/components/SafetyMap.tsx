@@ -710,7 +710,17 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
       </MapContainer>
 
       {/* Floating Controls */}
-      <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-2">
+      <div className="absolute top-20 right-4 z-[1000] flex flex-col gap-2">
+        <Button 
+          variant="outline" 
+          size="icon" 
+          className={`shadow-md hover-elevate rounded-full h-11 w-11 ${showRoutePlanner ? 'bg-primary text-primary-foreground' : 'bg-background'}`}
+          onClick={() => setShowRoutePlanner(!showRoutePlanner)}
+          title="Para onde vamos?"
+          data-testid="button-toggle-route-planner"
+        >
+          <Navigation className={`h-5 w-5 ${showRoutePlanner ? '' : 'text-primary'}`} />
+        </Button>
         <Button 
           variant="outline" 
           size="icon" 
@@ -743,19 +753,21 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
       </div>
 
       {/* Route Planner Overlay */}
-      <div className="absolute top-4 left-4 z-[1000] w-full max-w-[320px]">
-        {!showRoutePlanner ? (
-          <Button
-            variant="outline"
-            className="bg-background/80 backdrop-blur-md shadow-lg rounded-full px-4 h-11 pointer-events-auto"
-            onClick={() => setShowRoutePlanner(true)}
-          >
-            <Navigation className="w-4 h-4 mr-2 text-primary" />
-            Para onde vamos?
-          </Button>
-        ) : (
+      {showRoutePlanner && (
+        <div className="absolute top-20 left-4 right-4 md:right-auto md:w-full md:max-w-[320px] z-[1000]">
           <div className="bg-background/95 backdrop-blur-sm p-3 rounded-lg shadow-xl border border-border pointer-events-auto">
-            <div className="flex gap-2 mb-2">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-bold font-display px-1">Para onde vamos?</h3>
+              <Button 
+                size="icon" 
+                variant="ghost"
+                className="h-8 w-8" 
+                onClick={() => setShowRoutePlanner(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="flex gap-2">
               <div className="relative flex-1">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <input
@@ -774,14 +786,6 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
                 disabled={isSearchingRoute}
               >
                 {isSearchingRoute ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-              </Button>
-              <Button 
-                size="icon" 
-                variant="ghost"
-                className="h-9 w-9" 
-                onClick={() => setShowRoutePlanner(false)}
-              >
-                <X className="h-4 w-4" />
               </Button>
             </div>
 
@@ -805,8 +809,8 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
               </div>
             )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
