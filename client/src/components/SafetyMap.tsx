@@ -202,15 +202,15 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
   const geolocateRef = useRef<any>(null);
   
   const [viewState, setViewState] = useState({
-    longitude: -46.6333,
-    latitude: -23.5505,
-    zoom: 13
+    longitude: -43.9345,
+    latitude: -19.8095,
+    zoom: 16
   });
   
   const [userPosition, setUserPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [showHeatmap, setShowHeatmap] = useState(false);
-  const [showPOIs, setShowPOIs] = useState(false);
+  const [showPOIs, setShowPOIs] = useState(true);
   const [pois, setPois] = useState<POI[]>([]);
   
   const [showRoutePlanner, setShowRoutePlanner] = useState(false);
