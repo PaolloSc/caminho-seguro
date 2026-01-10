@@ -8,10 +8,13 @@ export function useIsMobile() {
   React.useEffect(() => {
     const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
     const onChange = () => {
-      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
+      const isMobileSize = window.innerWidth < MOBILE_BREAKPOINT;
+      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      // We prioritize screen width for layout, but can consider touch for specific behaviors
+      setIsMobile(isMobileSize || (isTouchDevice && window.innerWidth < 1024));
     }
     mql.addEventListener("change", onChange)
-    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
+    onChange(); // Initialize correctly
     return () => mql.removeEventListener("change", onChange)
   }, [])
 

@@ -211,7 +211,7 @@ export function ReportDrawer({ isOpen, onClose, location }: ReportDrawerProps) {
     </Button>
   );
 
-  if (isMobile) {
+  if (isMobile && (window.innerWidth < 768)) {
     return (
       <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
         <DrawerContent className="px-3 h-[90vh] flex flex-col overflow-hidden">
