@@ -654,6 +654,7 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
           <Marker 
             key={report.id} 
             position={[report.lat, report.lng]}
+            icon={createIcon(report.type)}
           >
             <Popup className="rounded-xl overflow-hidden shadow-xl border-0">
               <div className="p-1 min-w-[200px]">
