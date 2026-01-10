@@ -27,21 +27,25 @@ const createIcon = (type: string) => {
 
   switch (type) {
     case 'assedio':
+    case 'harassment':
       iconComponent = <AlertTriangle className="w-4 h-4 text-white" />;
       bgColor = '#ef4444';
       shadowColor = 'rgba(239, 68, 68, 0.4)';
       break;
     case 'iluminacao_precaria':
+    case 'poor_lighting':
       iconComponent = <Lightbulb className="w-4 h-4 text-white" />;
       bgColor = '#f59e0b';
       shadowColor = 'rgba(245, 158, 11, 0.4)';
       break;
     case 'deserto':
+    case 'deserted':
       iconComponent = <Ghost className="w-4 h-4 text-white" />;
       bgColor = '#6b7280';
       shadowColor = 'rgba(107, 114, 128, 0.4)';
       break;
     case 'abrigo_seguro':
+    case 'safe_haven':
       iconComponent = <Shield className="w-4 h-4 text-white" />;
       bgColor = '#22c55e';
       shadowColor = 'rgba(34, 197, 94, 0.4)';
