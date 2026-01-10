@@ -355,7 +355,7 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
   const [userPosition, setUserPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [selectedPOI, setSelectedPOI] = useState<POI | null>(null);
-  const [showHeatmap, setShowHeatmap] = useState(true);
+  const [showHeatmap, setShowHeatmap] = useState(false);
   const [showPOIs, setShowPOIs] = useState(true);
   const [pois, setPois] = useState<POI[]>([]);
   
