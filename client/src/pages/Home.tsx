@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SafetyMap } from "@/components/SafetyMap";
 import { ReportDrawer } from "@/components/ReportDrawer";
 import { Button } from "@/components/ui/button-custom";
@@ -11,20 +11,61 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
+// Detecta se é noite (entre 18h e 6h)
+function isNightTime(): boolean {
+  const hour = new Date().getHours();
+  return hour >= 18 || hour < 6;
+}
+
 export default function Home() {
   const { data: reports = [] } = useReports();
   const { user, isAuthenticated, logout } = useAuth();
   const { toast } = useToast();
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    // Inicializa com base na hora do dia
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) return savedTheme === 'dark';
+    return isNightTime();
+  });
+  const [isAutoTheme, setIsAutoTheme] = useState(() => {
+    return localStorage.getItem('autoTheme') !== 'false';
+  });
   
   // Drawer/Dialog states
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<{lat: number, lng: number} | null>(null);
   const [selectedReportId, setSelectedReportId] = useState<number | null>(null);
 
+  // Aplica tema ao carregar e monitora mudanças de hora
+  useEffect(() => {
+    if (isAutoTheme) {
+      const checkTime = () => {
+        const shouldBeDark = isNightTime();
+        if (shouldBeDark !== isDarkMode) {
+          setIsDarkMode(shouldBeDark);
+        }
+      };
+      
+      checkTime();
+      const interval = setInterval(checkTime, 60000); // Verifica a cada minuto
+      return () => clearInterval(interval);
+    }
+  }, [isAutoTheme]);
+
+  // Aplica classe dark ao documento
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+  }, [isDarkMode]);
+
   const toggleTheme = () => {
+    setIsAutoTheme(false);
+    localStorage.setItem('autoTheme', 'false');
     setIsDarkMode(!isDarkMode);
-    document.documentElement.classList.toggle('dark');
   };
 
   const handleAddReport = (lat: number, lng: number) => {

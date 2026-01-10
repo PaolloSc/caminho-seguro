@@ -144,6 +144,39 @@ function UserLocator({ onLocationFound }: { onLocationFound: (lat: number, lng: 
   return <Marker position={position} icon={userIcon} />;
 }
 
+// Component to recenter map
+function RecenterButton({ userPosition }: { userPosition: { lat: number; lng: number } | null }) {
+  const map = useMap();
+  
+  const handleRecenter = () => {
+    if (userPosition) {
+      map.flyTo([userPosition.lat, userPosition.lng], 15, { duration: 1 });
+    } else {
+      map.locate().on("locationfound", function (e) {
+        map.flyTo(e.latlng, 15, { duration: 1 });
+      });
+    }
+  };
+
+  return (
+    <div className="leaflet-bottom leaflet-left" style={{ marginBottom: '20px', marginLeft: '10px' }}>
+      <div className="leaflet-control">
+        <button
+          onClick={handleRecenter}
+          className="bg-white dark:bg-gray-800 w-10 h-10 rounded-xl shadow-lg flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-600"
+          title="Centralizar na minha localização"
+          data-testid="button-recenter"
+        >
+          <svg className="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 interface SafetyMapProps {
   reports: Report[];
   onAddReport: (lat: number, lng: number) => void;
@@ -157,6 +190,7 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className }: Saf
   const { mutate: downvoteReport, isPending: isDownvoting } = useDownvoteReport();
   const { mutate: flagReport, isPending: isFlagging } = useFlagReport();
   const [mapCenter, setMapCenter] = useState<[number, number]>([-23.5505, -46.6333]); // Default SP
+  const [userPosition, setUserPosition] = useState<{ lat: number; lng: number } | null>(null);
   
   const handleFlag = (reportId: number) => {
     if (!user) return;
@@ -176,7 +210,12 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className }: Saf
           url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
         />
         
-        <UserLocator onLocationFound={(lat, lng) => setMapCenter([lat, lng])} />
+        <UserLocator onLocationFound={(lat, lng) => {
+          setMapCenter([lat, lng]);
+          setUserPosition({ lat, lng });
+        }} />
+        
+        <RecenterButton userPosition={userPosition} />
         
         <MapEvents onMapClick={onAddReport} />
 
