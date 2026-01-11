@@ -181,7 +181,7 @@ export default function Home() {
                                 <div className={`w-12 h-12 rounded-2xl ${item.color.replace('text-', 'bg-')}/10 flex items-center justify-center`}>
                                   <item.icon className={`w-6 h-6 ${item.color}`} />
                                 </div>
-                                <span className="font-bold text-lg">{item.label}</span>
+                                <span className="font-semibold text-sm">{item.label}</span>
                               </Button>
                             </Link>
                           ))}
@@ -199,11 +199,11 @@ export default function Home() {
                                 <Shield className="w-6 h-6 text-white" />
                               </div>
                               <div>
-                                <div className="font-bold text-lg capitalize leading-tight">
+                                <div className="font-semibold text-sm capitalize leading-tight">
                                   {user?.userLevel === 'verificado' ? 'Verificada' :
                                    user?.userLevel === 'normal' ? 'Normal' : 'Nova'}
                                 </div>
-                                <div className="text-sm font-medium text-muted-foreground">
+                                <div className="text-xs font-medium text-muted-foreground">
                                   {user?.reputationScore || 0} pontos
                                 </div>
                               </div>
@@ -243,7 +243,7 @@ export default function Home() {
                                 <div className={`w-10 h-10 rounded-xl ${item.bg} flex items-center justify-center group-hover:scale-110 transition-transform`}>
                                   <item.icon className={`w-5 h-5 ${item.color}`} />
                                 </div>
-                                <span className="font-bold text-sm text-foreground/80">{item.label}</span>
+                                <span className="font-medium text-xs text-foreground/80">{item.label}</span>
                               </div>
                             ))}
                           </div>
