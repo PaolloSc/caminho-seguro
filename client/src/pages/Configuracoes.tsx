@@ -12,7 +12,8 @@ import {
   ChevronRight,
   LogOut,
   Trash2,
-  Key
+  Key,
+  Shield
 } from "lucide-react";
 import {
   AlertDialog,

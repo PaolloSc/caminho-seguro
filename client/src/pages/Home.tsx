@@ -4,7 +4,7 @@ import { ReportDrawer } from "@/components/ReportDrawer";
 import { Button } from "@/components/ui/button-custom";
 import { useReports } from "@/hooks/use-reports";
 import { useAuth } from "@/hooks/use-auth";
-import { Plus, Shield, Menu, Moon, Sun, AlertTriangle, Lightbulb, Ghost, ThumbsUp, Settings, LogOut } from "lucide-react";
+import { Plus, Shield, Menu, Moon, Sun, AlertTriangle, Lightbulb, Ghost, ThumbsUp, Settings, LogOut, MapPin } from "lucide-react";
 import { Link } from "wouter";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
