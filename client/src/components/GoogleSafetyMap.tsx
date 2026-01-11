@@ -545,7 +545,7 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
           />
         )}
 
-        {routeCoords && (
+        {routeCoords && routeCoords.length > 1 && (
           <Polyline
             path={routeCoords}
             options={{
@@ -797,9 +797,24 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
       </div>
 
       {showRoutePlanner && (
-        <div className="absolute top-4 left-4 right-20 z-10 bg-card p-3 rounded-lg shadow-lg">
+        <div className="absolute top-4 left-3 right-3 sm:left-4 sm:right-20 z-10 bg-card p-3 rounded-lg shadow-lg max-w-[calc(100%-60px)] sm:max-w-none">
           <div className="flex items-center gap-2 mb-2">
-            <div className="flex-1 relative">
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => {
+                setShowRoutePlanner(false);
+                setRouteCoords(null);
+                setRouteSafety(null);
+                setDestinationMarker(null);
+                setDestinationQuery('');
+              }}
+              className="shrink-0 sm:hidden"
+              data-testid="button-close-route-planner-mobile"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+            <div className="flex-1 relative min-w-0">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 type="text"
@@ -815,9 +830,10 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
               size="sm"
               onClick={handleSearchRoute}
               disabled={isSearchingRoute || !userPosition}
+              className="shrink-0"
               data-testid="button-search-route"
             >
-              {isSearchingRoute ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Buscar'}
+              {isSearchingRoute ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Ir'}
             </Button>
             <Button
               size="icon"
@@ -829,6 +845,7 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
                 setDestinationMarker(null);
                 setDestinationQuery('');
               }}
+              className="shrink-0 hidden sm:flex"
               data-testid="button-close-route-planner"
             >
               <X className="w-4 h-4" />
@@ -841,11 +858,11 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
               routeSafety.score >= 40 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
               'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
             }`}>
-              <div className="flex items-center justify-between">
-                <span className="font-medium">Segurança da rota: {routeSafety.score}%</span>
+              <div className="flex items-center justify-between flex-wrap gap-1">
+                <span className="font-medium">Segurança: {routeSafety.score}%</span>
                 {routeSafety.nearbyDangers > 0 && (
                   <span className="text-xs">
-                    {routeSafety.nearbyDangers} alerta{routeSafety.nearbyDangers > 1 ? 's' : ''} próximo{routeSafety.nearbyDangers > 1 ? 's' : ''}
+                    {routeSafety.nearbyDangers} alerta{routeSafety.nearbyDangers > 1 ? 's' : ''}
                   </span>
                 )}
               </div>
