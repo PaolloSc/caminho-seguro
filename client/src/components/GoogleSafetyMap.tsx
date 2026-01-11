@@ -156,6 +156,35 @@ function calculateRouteSafety(route: google.maps.LatLngLiteral[], reports: Repor
 
 async function geocodeAddress(query: string): Promise<{ lat: number; lng: number; display: string } | null> {
   try {
+    // Tenta usar Google Geocoder primeiro
+    const geocoder = new google.maps.Geocoder();
+    const result = await new Promise<google.maps.GeocoderResult | null>((resolve) => {
+      geocoder.geocode(
+        { 
+          address: query,
+          region: 'BR',
+          componentRestrictions: { country: 'BR' }
+        },
+        (results, status) => {
+          if (status === google.maps.GeocoderStatus.OK && results?.[0]) {
+            resolve(results[0]);
+          } else {
+            console.log('Google Geocoder status:', status);
+            resolve(null);
+          }
+        }
+      );
+    });
+
+    if (result) {
+      return {
+        lat: result.geometry.location.lat(),
+        lng: result.geometry.location.lng(),
+        display: result.formatted_address
+      };
+    }
+
+    // Fallback para Nominatim
     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=br&limit=1`;
     const response = await fetch(url, {
       headers: { 'Accept-Language': 'pt-BR' }
@@ -483,14 +512,40 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
   }, [navigationMode, navPosition, map, getZoomForSpeed, handlePositionUpdate]);
 
   const handleSearchRoute = async () => {
-    if (!userPosition || !destinationQuery.trim()) return;
+    if (!destinationQuery.trim()) {
+      toast({
+        title: "Digite um destino",
+        description: "Por favor, digite o endereço para onde você quer ir.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!userPosition) {
+      toast({
+        title: "Aguarde sua localização",
+        description: "Ainda estamos obtendo sua localização. Tente novamente em alguns segundos.",
+        variant: "destructive"
+      });
+      // Tenta obter localização novamente
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setUserPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        },
+        () => {}
+      );
+      return;
+    }
     
     setIsSearchingRoute(true);
     setRouteCoords(null);
     setRouteSafety(null);
     
     try {
+      console.log('Buscando destino:', destinationQuery);
       const destination = await geocodeAddress(destinationQuery);
+      console.log('Destino encontrado:', destination);
+      
       if (!destination) {
         toast({
           title: "Endereço não encontrado",
@@ -502,12 +557,14 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
       
       setDestinationMarker({ lat: destination.lat, lng: destination.lng });
       
+      console.log('Buscando rota de', userPosition, 'para', destination);
       const route = await fetchRoute(
         userPosition,
         { lat: destination.lat, lng: destination.lng }
       );
+      console.log('Rota encontrada:', route?.length, 'pontos');
       
-      if (!route) {
+      if (!route || route.length === 0) {
         toast({
           title: "Rota não encontrada",
           description: "Não foi possível calcular uma rota para este destino.",
@@ -525,6 +582,11 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
         route.forEach(point => bounds.extend(point));
         map.fitBounds(bounds, 50);
       }
+      
+      toast({
+        title: "Rota calculada",
+        description: `Segurança: ${safety.score}%`,
+      });
     } catch (error) {
       console.error('Erro ao buscar rota:', error);
       toast({
@@ -968,7 +1030,7 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
               <Button
                 className="w-full h-10 font-bold"
                 onClick={handleSearchRoute}
-                disabled={isSearchingRoute || !userPosition}
+                disabled={isSearchingRoute}
                 data-testid="button-search-route"
               >
                 {isSearchingRoute ? (
