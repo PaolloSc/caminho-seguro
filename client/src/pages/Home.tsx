@@ -185,21 +185,6 @@ export default function Home() {
                       </a>
                     ) : (
                       <div className="space-y-6">
-                        {/* Menu de Navegação */}
-                        <div className="space-y-1">
-                          {[
-                            { icon: MapPin, label: "Mapa de segurança", color: "text-red-500", href: "/" },
-                            { icon: Settings, label: "Configurações", color: "text-blue-500", href: "/configuracoes" },
-                          ].map((item, i) => (
-                            <Link key={i} href={item.href}>
-                              <Button variant="ghost" className="w-full justify-start gap-4 h-14 hover:bg-muted/50 rounded-2xl no-default-hover-elevate">
-                                <item.icon className={`w-6 h-6 ${item.color}`} />
-                                <span className="font-bold text-lg">{item.label}</span>
-                              </Button>
-                            </Link>
-                          ))}
-                        </div>
-
                         {/* Seção de Reputação (Minha Conta) */}
                         <div className="pt-4 border-t border-border">
                           <h4 className="text-xs font-bold uppercase text-muted-foreground tracking-widest mb-4 px-4">Minha Conta</h4>
