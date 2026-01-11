@@ -135,8 +135,8 @@ export default function Configuracoes() {
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto bg-primary/5">
-        <div className="flex flex-col items-center py-10 bg-primary text-primary-foreground">
+      <div className="flex-1 overflow-y-auto bg-primary/5 flex flex-col">
+        <div className="flex flex-col items-center py-10 bg-primary text-primary-foreground flex-shrink-0">
           <div className="relative mb-4">
             <Avatar className="w-32 h-32 border-4 border-primary-foreground/20 shadow-2xl">
               <AvatarImage src={user?.profileImageUrl || undefined} />

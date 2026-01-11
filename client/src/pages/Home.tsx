@@ -135,30 +135,15 @@ export default function Home() {
                   )}
                 </Button>
               </SheetTrigger>
-              <SheetContent className="overflow-y-auto">
-                <div className="flex flex-col h-full">
-                  <div className="py-6 flex-shrink-0">
-                    <h2 className="text-2xl font-display font-bold mb-1">
-                      {isAuthenticated 
-                        ? (isMobile ? labels.greeting.mobile(user?.firstName || '') : labels.greeting.desktop(user?.firstName || ''))
-                        : (isMobile ? labels.guestGreeting.mobile : labels.guestGreeting.desktop)
-                      }
-                    </h2>
-                    <p className="text-muted-foreground">
-                      {isAuthenticated 
-                        ? (isMobile ? labels.welcomeMessage.mobile : labels.welcomeMessage.desktop)
-                        : (isMobile ? labels.guestMessage.mobile : labels.guestMessage.desktop)
-                      }
-                    </p>
-                  </div>
-
-                  <div className="flex-1 space-y-4 overflow-y-auto pt-4">
+              <SheetContent className="p-0 border-none w-[85%] sm:max-w-md bg-background overflow-hidden flex flex-col h-full">
+                <div className="flex-1 overflow-y-auto px-6">
+                  <div className="flex flex-col h-full pt-8">
                     {isAuthenticated ? (
-                      <div className="flex flex-col items-center mb-8">
+                      <div className="flex flex-col items-center mb-8 flex-shrink-0">
                         <div className="relative mb-4">
                           <Avatar className="w-32 h-32 border-4 border-primary/20 shadow-xl">
                             <AvatarImage src={user?.profileImageUrl || undefined} />
-                            <AvatarFallback className="text-4xl bg-primary text-primary-foreground">
+                            <AvatarFallback className="text-4xl bg-primary text-primary-foreground font-bold">
                               {user?.firstName?.[0] || 'U'}
                             </AvatarFallback>
                           </Avatar>
@@ -168,7 +153,7 @@ export default function Home() {
                       </div>
                     ) : (
                       <div className="py-6 flex-shrink-0">
-                        <h2 className="text-2xl font-display font-bold mb-1">
+                        <h2 className="text-2xl font-display font-bold mb-1 text-primary">
                           {isMobile ? labels.guestGreeting.mobile : labels.guestGreeting.desktop}
                         </h2>
                         <p className="text-muted-foreground">
@@ -178,39 +163,58 @@ export default function Home() {
                     )}
 
                     {!isAuthenticated ? (
-                      <a href="/api/login" className="w-full block">
-                        <Button className="w-full" size="lg">
-                          {isMobile ? labels.loginButton.mobile : labels.loginButton.desktop}
-                        </Button>
-                      </a>
+                      <div className="flex-shrink-0 mb-6">
+                        <a href="/api/login" className="w-full block">
+                          <Button className="w-full h-14 rounded-2xl font-bold text-lg shadow-lg" size="lg">
+                            {isMobile ? labels.loginButton.mobile : labels.loginButton.desktop}
+                          </Button>
+                        </a>
+                      </div>
                     ) : (
-                      <div className="space-y-6">
+                      <div className="space-y-8 pb-10">
+                        {/* Menu de Navegação */}
+                        <div className="space-y-2">
+                          {[
+                            { icon: MapPin, label: "Mapa de segurança", color: "text-red-500", href: "/" },
+                            { icon: Settings, label: "Configurações", color: "text-blue-500", href: "/configuracoes" },
+                          ].map((item, i) => (
+                            <Link key={i} href={item.href}>
+                              <Button variant="ghost" className="w-full justify-start gap-4 h-16 hover:bg-muted/50 rounded-2xl no-default-hover-elevate transition-all active:scale-[0.98]">
+                                <div className={`w-12 h-12 rounded-2xl ${item.color.replace('text-', 'bg-')}/10 flex items-center justify-center`}>
+                                  <item.icon className={`w-6 h-6 ${item.color}`} />
+                                </div>
+                                <span className="font-bold text-lg">{item.label}</span>
+                              </Button>
+                            </Link>
+                          ))}
+                        </div>
+
                         {/* Seção de Reputação (Minha Conta) */}
-                        <div className="pt-4 border-t border-border">
-                          <h4 className="text-xs font-bold uppercase text-muted-foreground tracking-widest mb-4 px-4">Minha Conta</h4>
-                          <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10">
-                            <div className="flex items-center gap-3 mb-3">
-                              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        <div className="pt-6 border-t border-border">
+                          <h4 className="text-xs font-bold uppercase text-muted-foreground tracking-widest mb-4 px-2">Minha Conta</h4>
+                          <div className="p-5 bg-primary/5 rounded-[2rem] border border-primary/10 shadow-sm">
+                            <div className="flex items-center gap-4 mb-4">
+                              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner ${
                                 user?.userLevel === 'verificado' ? 'bg-blue-500' :
                                 user?.userLevel === 'normal' ? 'bg-green-500' : 'bg-gray-400'
                               }`}>
-                                <Shield className="w-5 h-5 text-white" />
+                                <Shield className="w-6 h-6 text-white" />
                               </div>
                               <div>
-                                <div className="font-bold capitalize">
+                                <div className="font-bold text-lg capitalize leading-tight">
                                   {user?.userLevel === 'verificado' ? 'Verificada' :
                                    user?.userLevel === 'normal' ? 'Normal' : 'Nova'}
                                 </div>
-                                <div className="text-xs text-muted-foreground">
+                                <div className="text-sm font-medium text-muted-foreground">
                                   {user?.reputationScore || 0} pontos
                                 </div>
                               </div>
                             </div>
                             {user?.userLevel !== 'verificado' && (
-                              <div className="space-y-2">
-                                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                              <div className="space-y-3">
+                                <div className="h-2.5 bg-muted rounded-full overflow-hidden">
                                   <div 
-                                    className="h-full bg-primary rounded-full transition-all"
+                                    className="h-full bg-primary rounded-full transition-all duration-1000"
                                     style={{ 
                                       width: `${user?.userLevel === 'novo' 
                                         ? Math.min(100, ((user?.reputationScore || 0) / 30) * 100)
@@ -219,24 +223,29 @@ export default function Home() {
                                     }}
                                   />
                                 </div>
+                                <p className="text-[10px] text-center font-bold text-muted-foreground uppercase tracking-wider">
+                                  {user?.userLevel === 'novo' ? '30 pontos para nível Normal' : '50 pontos para nível Verificada'}
+                                </p>
                               </div>
                             )}
                           </div>
                         </div>
 
                         {/* Legenda do Mapa */}
-                        <div className="pt-4 border-t border-border">
-                          <h4 className="text-xs font-bold uppercase text-muted-foreground tracking-widest mb-4 px-4">Legenda do Mapa</h4>
-                          <div className="grid grid-cols-1 gap-1">
+                        <div className="pt-6 border-t border-border">
+                          <h4 className="text-xs font-bold uppercase text-muted-foreground tracking-widest mb-4 px-2">Legenda do Mapa</h4>
+                          <div className="grid grid-cols-1 gap-2">
                             {[
-                              { icon: Shield, label: labels.incidentTypes.abrigo_seguro.desktop, color: 'text-[hsl(var(--safe))]' },
-                              { icon: AlertTriangle, label: labels.incidentTypes.assedio.desktop, color: 'text-destructive' },
-                              { icon: Lightbulb, label: labels.incidentTypes.iluminacao_precaria.desktop, color: 'text-[hsl(var(--warning))]' },
-                              { icon: Ghost, label: labels.incidentTypes.deserto.desktop, color: 'text-gray-500' },
+                              { icon: Shield, label: labels.incidentTypes.abrigo_seguro.desktop, color: 'text-[hsl(var(--safe))]', bg: 'bg-[hsl(var(--safe))]/10' },
+                              { icon: AlertTriangle, label: labels.incidentTypes.assedio.desktop, color: 'text-destructive', bg: 'bg-destructive/10' },
+                              { icon: Lightbulb, label: labels.incidentTypes.iluminacao_precaria.desktop, color: 'text-[hsl(var(--warning))]', bg: 'bg-[hsl(var(--warning))]/10' },
+                              { icon: Ghost, label: labels.incidentTypes.deserto.desktop, color: 'text-gray-500', bg: 'bg-gray-500/10' },
                             ].map((item, i) => (
-                              <div key={i} className="flex items-center gap-4 px-4 py-2 hover:bg-muted/30 rounded-lg transition-colors">
-                                <item.icon className={`w-5 h-5 ${item.color}`} />
-                                <span className="font-medium text-sm">{item.label}</span>
+                              <div key={i} className="flex items-center gap-4 px-4 py-3 hover:bg-muted/30 rounded-2xl transition-all cursor-default group">
+                                <div className={`w-10 h-10 rounded-xl ${item.bg} flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                                  <item.icon className={`w-5 h-5 ${item.color}`} />
+                                </div>
+                                <span className="font-bold text-sm text-foreground/80">{item.label}</span>
                               </div>
                             ))}
                           </div>
@@ -244,44 +253,24 @@ export default function Home() {
                       </div>
                     )}
                   </div>
+                </div>
 
-                  <div className="pt-6 border-t border-border space-y-2 flex-shrink-0">
-                    {isAuthenticated && (
-                      <Link href="/configuracoes">
-                        <Button 
-                          variant="ghost" 
-                          className="w-full justify-start"
-                          data-testid="link-settings"
-                        >
-                          <Settings className="w-4 h-4 mr-2" />
-                          {isMobile ? labels.settings.mobile : labels.settings.desktop}
-                        </Button>
-                      </Link>
-                    )}
-                    <div className="flex gap-2 text-xs flex-wrap">
-                      <Link href="/termos">
-                        <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" data-testid="link-terms">
-                          {isMobile ? labels.terms.mobile : labels.terms.desktop}
-                        </Button>
-                      </Link>
-                      <Link href="/privacidade">
-                        <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" data-testid="link-privacy">
-                          {isMobile ? labels.privacy.mobile : labels.privacy.desktop}
-                        </Button>
-                      </Link>
-                    </div>
-                    {isAuthenticated && (
-                      <Button 
-                        variant="ghost" 
-                        className="w-full justify-start text-muted-foreground hover:text-destructive"
-                        onClick={() => logout()}
-                        data-testid="button-logout"
-                      >
-                        <LogOut className="w-4 h-4 mr-2" />
-                        {isMobile ? labels.logout.mobile : labels.logout.desktop}
-                      </Button>
-                    )}
+                {/* Footer Section - Fixed at Bottom */}
+                <div className="p-6 bg-muted/20 border-t border-border mt-auto flex-shrink-0">
+                  <div className="flex gap-4 justify-center mb-4">
+                    <Link href="/termos" className="text-xs font-bold text-muted-foreground hover:text-primary transition-colors">Termos</Link>
+                    <Link href="/privacidade" className="text-xs font-bold text-muted-foreground hover:text-primary transition-colors">Privacidade</Link>
                   </div>
+                  {isAuthenticated && (
+                    <Button 
+                      variant="ghost" 
+                      className="w-full h-12 rounded-2xl font-bold text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+                      onClick={() => logout()}
+                    >
+                      <LogOut className="w-5 h-5 mr-3" />
+                      Sair da conta
+                    </Button>
+                  )}
                 </div>
               </SheetContent>
             </Sheet>

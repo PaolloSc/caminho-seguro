@@ -451,6 +451,7 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
 
       // Inicia a animação focando exatamente na posição do usuário
       const startAnimation = (lat: number, lng: number) => {
+        if (!map) return;
         // Zoom 18 = máxima precisão visual na localização exata
         map.flyTo([lat, lng], 18, {
           duration: 2.5,
