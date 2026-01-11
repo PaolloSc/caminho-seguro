@@ -189,7 +189,6 @@ export default function Home() {
                         <div className="space-y-1">
                           {[
                             { icon: MapPin, label: "Mapa de segurança", color: "text-red-500", href: "/" },
-                            { icon: Shield, label: "Meus Anjos", color: "text-green-500", href: "/configuracoes" },
                             { icon: Settings, label: "Configurações", color: "text-blue-500", href: "/configuracoes" },
                           ].map((item, i) => (
                             <Link key={i} href={item.href}>

@@ -13,8 +13,12 @@ import {
   LogOut,
   Trash2,
   Key,
-  Shield
+  Shield,
+  Bell,
+  EyeOff,
+  MapPin
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -191,21 +195,81 @@ export default function Configuracoes() {
           </section>
 
           <section className="space-y-3">
-            <h3 className="text-sm font-bold uppercase text-muted-foreground tracking-widest px-2">Backup e Segurança</h3>
+            <h3 className="text-sm font-bold uppercase text-muted-foreground tracking-widest px-2">Privacidade e Segurança</h3>
             <div className="bg-card rounded-3xl border border-border overflow-hidden shadow-sm">
               <div className="flex items-center justify-between py-5 px-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-2xl bg-blue-500/10 flex items-center justify-center">
-                    <Shield className="w-5 h-5 text-blue-500" />
+                  <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center">
+                    <EyeOff className="w-5 h-5 text-primary" />
                   </div>
-                  <div>
-                    <p className="font-bold text-base">Backup automático</p>
-                    <p className="text-xs text-muted-foreground">Fazer backup das configurações</p>
+                  <div className="flex-1">
+                    <p className="font-bold text-base">Ativar camuflagem do app</p>
+                    <p className="text-xs text-muted-foreground">Mostra tela de disfarce ao abrir o app (recomendado)</p>
                   </div>
                 </div>
-                <div className="w-12 h-6 bg-muted rounded-full relative p-1 cursor-pointer">
-                  <div className="w-4 h-4 bg-white rounded-full shadow-sm"></div>
+                <Switch defaultChecked className="data-[state=checked]:bg-green-500" />
+              </div>
+              <Separator className="mx-6 w-auto" />
+              <div className="flex items-center justify-between py-5 px-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-2xl bg-green-500/10 flex items-center justify-center">
+                    <MapPin className="w-5 h-5 text-green-500" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-bold text-base">Precisão de localização</p>
+                    <p className="text-xs text-muted-foreground">Alta precisão (GPS + rede)</p>
+                  </div>
                 </div>
+                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              </div>
+            </div>
+          </section>
+
+          <section className="space-y-3">
+            <h3 className="text-sm font-bold uppercase text-muted-foreground tracking-widest px-2">Notificações</h3>
+            <div className="bg-card rounded-3xl border border-border overflow-hidden shadow-sm">
+              <div className="flex items-center justify-between py-5 px-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-2xl bg-yellow-500/10 flex items-center justify-center">
+                    <Bell className="w-5 h-5 text-yellow-500" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-bold text-base">Ativar notificações</p>
+                    <p className="text-xs text-muted-foreground">Receber notificações do aplicativo</p>
+                  </div>
+                </div>
+                <Switch defaultChecked className="data-[state=checked]:bg-green-500" />
+              </div>
+              <Separator className="mx-6 w-auto" />
+              <div className="flex items-center justify-between py-5 px-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-2xl bg-red-500/10 flex items-center justify-center">
+                    <Shield className="w-5 h-5 text-red-500" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-bold text-base">Áreas de risco próximas</p>
+                    <p className="text-xs text-muted-foreground">Alertas ao entrar em áreas de risco</p>
+                  </div>
+                </div>
+                <Switch defaultChecked className="data-[state=checked]:bg-green-500" />
+              </div>
+            </div>
+          </section>
+
+          <section className="space-y-3">
+            <h3 className="text-sm font-bold uppercase text-muted-foreground tracking-widest px-2">Mapa e Localização</h3>
+            <div className="bg-card rounded-3xl border border-border overflow-hidden shadow-sm">
+              <div className="flex items-center justify-between py-5 px-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-2xl bg-orange-500/10 flex items-center justify-center">
+                    <MapPin className="w-5 h-5 text-orange-500" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-bold text-base">Mostrar áreas de risco por padrão</p>
+                    <p className="text-xs text-muted-foreground">Exibir áreas de risco ao abrir o mapa</p>
+                  </div>
+                </div>
+                <Switch defaultChecked className="data-[state=checked]:bg-green-500" />
               </div>
             </div>
           </section>
