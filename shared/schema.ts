@@ -72,7 +72,10 @@ export const insertReportFlagSchema = createInsertSchema(reportFlags).omit({
 });
 
 // === TYPES ===
-export type Report = typeof reports.$inferSelect;
+export type Report = typeof reports.$inferSelect & {
+  userLevel?: string; // 'novo' | 'normal' | 'verificado'
+  confirmationStatus?: string; // 'pendente' | 'parcial' | 'confirmado'
+};
 export type InsertReport = z.infer<typeof insertReportSchema>;
 export type Comment = typeof comments.$inferSelect;
 export type InsertComment = z.infer<typeof insertCommentSchema>;

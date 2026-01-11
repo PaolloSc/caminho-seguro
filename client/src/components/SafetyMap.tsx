@@ -671,7 +671,7 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
             {selectedReport?.id === report.id && (
               <Popup offset={[0, -10]} className="safety-popup">
                 <div className="p-2 min-w-[220px]">
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <span className={`px-2 py-1 rounded-md text-xs font-bold uppercase text-white
                       ${selectedReport.type === 'assedio' ? 'bg-destructive' : 
                         selectedReport.type === 'abrigo_seguro' ? 'bg-[hsl(var(--safe))]' :
@@ -679,10 +679,29 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
                     }>
                       {selectedReport.type.replace('_', ' ')}
                     </span>
+                    {/* Badge de usuário verificado */}
+                    {selectedReport.userLevel === 'verificado' && (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-500 text-white flex items-center gap-1">
+                        <Shield className="w-3 h-3" /> Verificado
+                      </span>
+                    )}
+                    {/* Badge de confirmação comunitária */}
+                    {selectedReport.confirmationStatus === 'confirmado' && (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-500 text-white flex items-center gap-1">
+                        <ThumbsUp className="w-3 h-3" /> Confirmado
+                      </span>
+                    )}
                     <span className="text-xs text-muted-foreground ml-auto">
                       {format(new Date(selectedReport.createdAt!), 'd MMM, HH:mm')}
                     </span>
                   </div>
+                  {/* Indicador de verificações */}
+                  {(selectedReport.verifiedCount || 0) > 0 && (
+                    <div className="flex items-center gap-1 mb-2 text-xs text-green-600">
+                      <ThumbsUp className="w-3 h-3" />
+                      <span>{selectedReport.verifiedCount} {selectedReport.verifiedCount === 1 ? 'pessoa confirmou' : 'pessoas confirmaram'}</span>
+                    </div>
+                  )}
                   <p className="text-sm font-medium mb-3 line-clamp-3">{selectedReport.description}</p>
                   <Button 
                     size="sm" 

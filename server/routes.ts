@@ -77,20 +77,38 @@ export async function registerRoutes(
   app.get(api.reports.list.path, async (req, res) => {
     const reports = await storage.getReports(10); // delay de 10ms
     
-    // Remove userId dos relatórios para anonimato
-    const safeReports = reports.map(r => ({
-      ...r,
-      userId: undefined, // Não expor userId
+    // Buscar nível do usuário para cada relatório (para badge de verificado)
+    const safeReports = await Promise.all(reports.map(async (r) => {
+      let userLevel = 'novo';
+      if (r.userId) {
+        userLevel = await storage.getUserLevel(r.userId);
+      }
+      
+      // Determinar status de confirmação
+      const confirmationStatus = r.verifiedCount && r.verifiedCount >= 3 
+        ? 'confirmado' 
+        : r.verifiedCount && r.verifiedCount >= 1 
+          ? 'parcial' 
+          : 'pendente';
+      
+      return {
+        ...r,
+        userId: undefined, // Não expor userId
+        userLevel, // Nível do autor (para badge)
+        confirmationStatus, // Status de confirmação comunitária
+      };
     }));
     
     res.json(safeReports);
   });
 
-  // Criar relatório (com rate limiting e sanitização)
+  // Criar relatório (com rate limiting, validação geográfica e sanitização)
   app.post(api.reports.create.path, isAuthenticated, createReportLimiter, async (req, res) => {
     try {
       const input = api.reports.create.input.parse(req.body);
       const user = req.user as any;
+      const userId = user.claims.sub;
+      const clientIp = req.ip || req.headers['x-forwarded-for'] as string;
       
       // Validar tipo
       if (!ALLOWED_TYPES.includes(input.type)) {
@@ -100,12 +118,38 @@ export async function registerRoutes(
         });
       }
       
-      // Verificar limite diário por usuário (máximo 5 por dia)
-      const dailyCount = await storage.getUserReportCount(user.claims.sub, 24);
-      if (dailyCount >= 5) {
+      // === VALIDAÇÃO 1: Rate limiting baseado no nível do usuário ===
+      const userLimits = await storage.getUserRateLimits(userId);
+      const dailyCount = await storage.getUserReportCount(userId, 24);
+      const hourlyCount = await storage.getUserReportCount(userId, 1);
+      
+      if (dailyCount >= userLimits.maxPerDay) {
         return res.status(429).json({
-          message: "Você atingiu o limite de 5 relatórios por dia",
+          message: `Você atingiu o limite de ${userLimits.maxPerDay} relatórios por dia`,
           field: "rate_limit",
+        });
+      }
+      
+      if (hourlyCount >= userLimits.maxPerHour) {
+        return res.status(429).json({
+          message: `Você atingiu o limite de ${userLimits.maxPerHour} relatórios por hora. Aguarde um pouco.`,
+          field: "rate_limit",
+        });
+      }
+      
+      // === VALIDAÇÃO 2: Verificar deslocamento geográfico ===
+      const geoValidation = await storage.validateGeographicMovement(userId, input.lat, input.lng);
+      if (!geoValidation.valid) {
+        await storage.createAuditLog({
+          action: 'report_blocked_geo',
+          userId,
+          ip: clientIp,
+          entityType: 'report',
+          metadata: { reason: geoValidation.reason, lat: input.lat, lng: input.lng },
+        });
+        return res.status(400).json({
+          message: "Deslocamento muito rápido detectado. Aguarde alguns minutos antes de reportar de outra localização.",
+          field: "location",
         });
       }
       
@@ -118,6 +162,22 @@ export async function registerRoutes(
         });
       }
       
+      // === VALIDAÇÃO 3: Verificar duplicatas ===
+      const duplicateCheck = await storage.findDuplicateReport(input.lat, input.lng, sanitizedDescription);
+      if (duplicateCheck.isDuplicate) {
+        await storage.createAuditLog({
+          action: 'report_blocked_duplicate',
+          userId,
+          ip: clientIp,
+          entityType: 'report',
+          metadata: { similarity: duplicateCheck.similarity, originalId: duplicateCheck.originalId },
+        });
+        return res.status(400).json({
+          message: "Um relato muito similar já existe nesta área. Você pode verificar o relato existente.",
+          field: "duplicate",
+        });
+      }
+      
       // Ofuscar localização para privacidade
       const obfuscated = obfuscateLocation(input.lat, input.lng);
       
@@ -126,7 +186,26 @@ export async function registerRoutes(
         description: sanitizedDescription,
         lat: obfuscated.lat,
         lng: obfuscated.lng,
-        userId: user.claims.sub,
+        userId,
+      });
+      
+      // Atualizar reputação do usuário
+      await storage.updateUserReputation(userId, 'report_created');
+      
+      // Criar log de auditoria LGPD
+      await storage.createAuditLog({
+        action: 'report_created',
+        userId,
+        ip: clientIp,
+        entityType: 'report',
+        entityId: report.id,
+        metadata: { 
+          type: input.type, 
+          severity: input.severity,
+          validations: ['geo_check', 'duplicate_check', 'rate_limit_check']
+        },
+        lat: obfuscated.lat,
+        lng: obfuscated.lng,
       });
       
       // Enviar notificação por email para o administrador (se configurado)
