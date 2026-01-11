@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">CaminhoSeguro</string>
+    <string name="title_activity_main">CaminhoSeguro</string>
+    <string name="package_name">ltd.caminhoseguro.app</string>
+    <string name="custom_url_scheme">ltd.caminhoseguro.app</string>
+</resources>
