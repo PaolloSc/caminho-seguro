@@ -20,6 +20,8 @@ function isNightTime(): boolean {
   return hour >= 18 || hour < 6;
 }
 
+import { Tutorial } from "@/components/Tutorial";
+
 export default function Home() {
   const { data: reports = [] } = useReports();
   const { user, isAuthenticated, logout } = useAuth();
@@ -286,6 +288,8 @@ export default function Home() {
           )}
         </SheetContent>
       </Sheet>
+
+      <Tutorial />
     </div>
   );
 }
