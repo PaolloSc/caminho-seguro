@@ -115,7 +115,7 @@ export function ReportDrawer({ isOpen, onClose, location }: ReportDrawerProps) {
   };
 
   const formContent = (
-    <div className={`${isMobile ? 'py-2 space-y-3' : 'py-4 space-y-6'}`}>
+    <div className={`${isMobile ? 'py-2 space-y-3' : 'space-y-6'}`}>
       <div className={`bg-muted/50 ${isMobile ? 'p-2' : 'p-3'} rounded-lg flex items-center gap-2 text-sm`}>
         <MapPin className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-primary flex-shrink-0`} />
         <div className="flex-1 min-w-0">
@@ -249,13 +249,17 @@ export function ReportDrawer({ isOpen, onClose, location }: ReportDrawerProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="p-6 pb-2">
           <DialogTitle>{labels.reportDrawer.title.desktop}</DialogTitle>
           <DialogDescription>{labels.reportDrawer.subtitle.desktop}</DialogDescription>
         </DialogHeader>
-        {formContent}
-        <DialogFooter>
+        <ScrollArea className="flex-1 px-6">
+          <div className="pb-6">
+            {formContent}
+          </div>
+        </ScrollArea>
+        <DialogFooter className="p-6 pt-2 border-t">
           {submitButton}
         </DialogFooter>
       </DialogContent>
