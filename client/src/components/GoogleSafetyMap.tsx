@@ -463,13 +463,14 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
     }
   };
 
-  const createMarkerIcon = (color: string, size: number = 32): google.maps.Symbol => ({
-    path: google.maps.SymbolPath.CIRCLE,
+  const createMarkerIcon = (color: string, size: number = 40): google.maps.Symbol => ({
+    path: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z',
     fillColor: color,
     fillOpacity: 1,
-    strokeColor: '#fff',
+    strokeColor: '#ffffff',
     strokeWeight: 2,
-    scale: size / 4,
+    scale: size / 12,
+    anchor: new google.maps.Point(12, 22),
   });
 
   if (loadError) {
@@ -592,18 +593,25 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
             position={{ lat: selectedReport.lat, lng: selectedReport.lng }}
             onCloseClick={() => setSelectedReport(null)}
           >
-            <div className="p-2 min-w-[220px]">
-              <div className="flex items-center gap-2 mb-2">
-                <div 
-                  className="w-6 h-6 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: REPORT_COLORS[selectedReport.type] }}
-                >
-                  {(() => {
-                    const Icon = getReportIcon(selectedReport.type);
-                    return <Icon className="w-3 h-3 text-white" />;
-                  })()}
+            <div style={{ padding: '12px', minWidth: '240px', fontFamily: 'system-ui, sans-serif' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <div style={{ 
+                  width: '28px', 
+                  height: '28px', 
+                  borderRadius: '50%', 
+                  backgroundColor: REPORT_COLORS[selectedReport.type],
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <span style={{ color: 'white', fontSize: '14px' }}>
+                    {selectedReport.type === 'assedio' && '⚠'}
+                    {selectedReport.type === 'iluminacao_precaria' && '💡'}
+                    {selectedReport.type === 'local_deserto' && '👻'}
+                    {selectedReport.type === 'abrigo_seguro' && '🛡'}
+                  </span>
                 </div>
-                <span className="font-medium text-sm text-foreground">
+                <span style={{ fontWeight: '600', fontSize: '14px', color: '#1f2937' }}>
                   {selectedReport.type === 'assedio' && 'Assédio'}
                   {selectedReport.type === 'iluminacao_precaria' && 'Iluminação Precária'}
                   {selectedReport.type === 'local_deserto' && 'Local Deserto'}
@@ -612,61 +620,99 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
               </div>
               
               {selectedReport.description && (
-                <p className="text-xs text-muted-foreground mb-2 line-clamp-3">
+                <p style={{ 
+                  fontSize: '12px', 
+                  color: '#6b7280', 
+                  marginBottom: '8px',
+                  overflow: 'hidden',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 3,
+                  WebkitBoxOrient: 'vertical'
+                }}>
                   {selectedReport.description}
                 </p>
               )}
               
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '11px', color: '#9ca3af', marginBottom: '12px' }}>
                 <span>{selectedReport.createdAt ? format(new Date(selectedReport.createdAt), 'dd/MM/yyyy HH:mm') : ''}</span>
-                <span className="flex items-center gap-1">
-                  <ThumbsUp className="w-3 h-3" />
-                  {selectedReport.verifiedCount || 0}
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  👍 {selectedReport.verifiedCount || 0}
                 </span>
               </div>
               
-              <div className="flex flex-wrap gap-1">
-                <Button
-                  size="sm"
-                  variant="outline"
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                <button
                   onClick={() => verifyReport(selectedReport.id)}
                   disabled={isVerifying || !user}
-                  className="text-xs h-7"
                   data-testid="button-verify-report"
+                  style={{
+                    padding: '6px 10px',
+                    fontSize: '12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    backgroundColor: 'white',
+                    cursor: isVerifying || !user ? 'not-allowed' : 'pointer',
+                    opacity: isVerifying || !user ? 0.5 : 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
                 >
-                  <ThumbsUp className="w-3 h-3 mr-1" />
-                  Confirmar
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
+                  👍 Confirmar
+                </button>
+                <button
                   onClick={() => downvoteReport(selectedReport.id)}
                   disabled={isDownvoting || !user}
-                  className="text-xs h-7"
                   data-testid="button-downvote-report"
+                  style={{
+                    padding: '6px 10px',
+                    fontSize: '12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    backgroundColor: 'white',
+                    cursor: isDownvoting || !user ? 'not-allowed' : 'pointer',
+                    opacity: isDownvoting || !user ? 0.5 : 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
                 >
-                  <ThumbsDown className="w-3 h-3 mr-1" />
-                  Negar
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
+                  👎 Negar
+                </button>
+                <button
                   onClick={() => flagReport({ reportId: selectedReport.id, reason: 'falso' })}
                   disabled={isFlagging || !user}
-                  className="text-xs h-7 text-destructive hover:text-destructive"
                   data-testid="button-flag-report"
+                  style={{
+                    padding: '6px 10px',
+                    fontSize: '12px',
+                    border: '1px solid #fecaca',
+                    borderRadius: '6px',
+                    backgroundColor: '#fef2f2',
+                    color: '#dc2626',
+                    cursor: isFlagging || !user ? 'not-allowed' : 'pointer',
+                    opacity: isFlagging || !user ? 0.5 : 1
+                  }}
                 >
-                  <Flag className="w-3 h-3" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="primary"
+                  🚩
+                </button>
+                <button
                   onClick={() => onViewReport(selectedReport.id)}
-                  className="text-xs h-7 ml-auto"
                   data-testid="button-view-report-details"
+                  style={{
+                    padding: '6px 12px',
+                    fontSize: '12px',
+                    border: 'none',
+                    borderRadius: '6px',
+                    backgroundColor: '#7c3aed',
+                    color: 'white',
+                    cursor: 'pointer',
+                    marginLeft: 'auto',
+                    fontWeight: '500'
+                  }}
                 >
                   Detalhes
-                </Button>
+                </button>
               </div>
             </div>
           </InfoWindow>
@@ -677,18 +723,25 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
             position={{ lat: selectedPOI.lat, lng: selectedPOI.lng }}
             onCloseClick={() => setSelectedPOI(null)}
           >
-            <div className="p-2">
-              <div className="flex items-center gap-2">
-                <div 
-                  className="w-5 h-5 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: POI_COLORS[selectedPOI.type] }}
-                >
-                  {(() => {
-                    const Icon = getPOIIcon(selectedPOI.type);
-                    return <Icon className="w-3 h-3 text-white" />;
-                  })()}
+            <div style={{ padding: '10px', fontFamily: 'system-ui, sans-serif' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ 
+                  width: '24px', 
+                  height: '24px', 
+                  borderRadius: '50%', 
+                  backgroundColor: POI_COLORS[selectedPOI.type],
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <span style={{ color: 'white', fontSize: '12px' }}>
+                    {selectedPOI.type === 'bus_stop' && '🚌'}
+                    {selectedPOI.type === 'park' && '🌳'}
+                    {selectedPOI.type === 'hospital' && '🏥'}
+                    {selectedPOI.type === 'police' && '🚔'}
+                  </span>
                 </div>
-                <span className="font-medium text-sm">
+                <span style={{ fontWeight: '600', fontSize: '13px', color: '#1f2937' }}>
                   {selectedPOI.name || (
                     selectedPOI.type === 'bus_stop' ? 'Ponto de Ônibus' :
                     selectedPOI.type === 'park' ? 'Praça/Parque' :
