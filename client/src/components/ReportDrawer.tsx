@@ -229,17 +229,15 @@ export function ReportDrawer({ isOpen, onClose, location }: ReportDrawerProps) {
   if (isMobile) {
     return (
       <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DrawerContent className="px-3 h-[95vh] flex flex-col">
+        <DrawerContent className="px-3 h-[95vh] flex flex-col overflow-hidden">
           <DrawerHeader className="flex-shrink-0 py-2 px-1">
             <DrawerTitle className="text-base">{labels.reportDrawer.title.mobile}</DrawerTitle>
             <DrawerDescription className="text-xs">{labels.reportDrawer.subtitle.mobile}</DrawerDescription>
           </DrawerHeader>
-          <ScrollArea className="flex-1 overflow-y-auto">
-            <div className="px-1">
-              {formContent}
-            </div>
-          </ScrollArea>
-          <DrawerFooter className="flex-shrink-0 pt-2 pb-4 px-1">
+          <div className="flex-1 overflow-y-auto px-1">
+            {formContent}
+          </div>
+          <DrawerFooter className="flex-shrink-0 pt-2 pb-4 px-1 border-t mt-2">
             {submitButton}
           </DrawerFooter>
         </DrawerContent>
@@ -249,17 +247,17 @@ export function ReportDrawer({ isOpen, onClose, location }: ReportDrawerProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col p-0">
-        <DialogHeader className="p-6 pb-2">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col p-0 overflow-hidden">
+        <DialogHeader className="p-6 pb-2 flex-shrink-0">
           <DialogTitle>{labels.reportDrawer.title.desktop}</DialogTitle>
           <DialogDescription>{labels.reportDrawer.subtitle.desktop}</DialogDescription>
         </DialogHeader>
-        <ScrollArea className="flex-1 px-6">
+        <div className="flex-1 overflow-y-auto px-6">
           <div className="pb-6">
             {formContent}
           </div>
-        </ScrollArea>
-        <DialogFooter className="p-6 pt-2 border-t">
+        </div>
+        <DialogFooter className="p-6 pt-2 border-t flex-shrink-0">
           {submitButton}
         </DialogFooter>
       </DialogContent>
