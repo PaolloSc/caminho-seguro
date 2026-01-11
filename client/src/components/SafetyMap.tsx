@@ -459,8 +459,12 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
         });
         
         setTimeout(() => {
-          if (map && map.getContainer()) {
-            map.invalidateSize();
+          if (map && map.getContainer() && map.getContainer().parentNode) {
+            try {
+              map.invalidateSize();
+            } catch (e) {
+              console.warn("Could not invalidate map size:", e);
+            }
           }
         }, 2700);
         setIsInitialAnimation(false);
