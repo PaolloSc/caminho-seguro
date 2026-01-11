@@ -210,5 +210,6 @@ export default function PoliticaPrivacidade() {
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 }
