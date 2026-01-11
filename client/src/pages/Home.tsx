@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { SafetyMap } from "@/components/SafetyMap";
+import { GoogleSafetyMap } from "@/components/GoogleSafetyMap";
 import { ReportDrawer } from "@/components/ReportDrawer";
 import { Button } from "@/components/ui/button-custom";
 import { useReports } from "@/hooks/use-reports";
@@ -278,7 +278,7 @@ export default function Home() {
 
       {/* Main Map Area */}
       <main className="flex-1 relative z-0">
-        <SafetyMap 
+        <GoogleSafetyMap 
           reports={reports}
           onAddReport={handleAddReport}
           onViewReport={(id) => setSelectedReportId(id)}

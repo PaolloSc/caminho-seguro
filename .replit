@@ -45,3 +45,4 @@ integrations = ["javascript_log_in_with_replit:2.0.0", "resend:1.0.0"]
 
 [userenv.shared]
 ADMIN_EMAIL = "paollosancheztjmg@gmail.com"
+VITE_GOOGLE_MAPS_API_KEY = "${GOOGLE_MAPS_API_KEY}"
