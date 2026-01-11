@@ -459,7 +459,7 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
         });
         
         setTimeout(() => {
-          if (map) {
+          if (map && map.getContainer()) {
             map.invalidateSize();
           }
         }, 2700);
