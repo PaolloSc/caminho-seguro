@@ -56,11 +56,6 @@ export const userPreferences = pgTable("user_preferences", {
   disguiseEnabled: boolean("disguise_enabled").default(false),
   disguiseType: text("disguise_type").default("calculator"), // 'calculator', 'notes', 'weather'
   disguisePin: varchar("disguise_pin", { length: 100 }), // PIN hasheado (null até ser definido)
-  // Localização
-  locationPrecision: text("location_precision").default("high"), // 'high' (GPS+rede), 'gps_only', 'network_only'
-  // Notificações
-  notificationsEnabled: boolean("notifications_enabled").default(true),
-  riskAreaAlerts: boolean("risk_area_alerts").default(true),
   // Timestamps
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -101,9 +96,6 @@ export const updateUserPreferencesSchema = z.object({
   disguiseEnabled: z.boolean().optional(),
   disguiseType: z.enum(['calculator', 'notes', 'weather']).optional(),
   disguisePin: z.string().min(4).max(6).regex(/^\d+$/).optional(),
-  locationPrecision: z.enum(['high', 'gps_only', 'network_only']).optional(),
-  notificationsEnabled: z.boolean().optional(),
-  riskAreaAlerts: z.boolean().optional(),
 });
 
 // === TYPES ===

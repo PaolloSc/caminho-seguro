@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button-custom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { 
   ArrowLeft, 
@@ -15,10 +15,10 @@ import {
   Key,
   Shield,
   Bell,
-  EyeOff,
-  MapPin
+  EyeOff
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import type { UserPreferences, UpdateUserPreferences } from "@shared/schema";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,6 +53,24 @@ export default function Configuracoes() {
   const [firstName, setFirstName] = useState(user?.firstName || "");
   const [lastName, setLastName] = useState(user?.lastName || "");
 
+  const { data: preferences } = useQuery<UserPreferences>({
+    queryKey: ["/api/user/preferences"],
+    enabled: isAuthenticated,
+  });
+
+  const updatePrefsMutation = useMutation({
+    mutationFn: async (data: UpdateUserPreferences) => {
+      const res = await apiRequest("PATCH", "/api/user/preferences", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user/preferences"] });
+    },
+  });
+
+  const [showPinDialog, setShowPinDialog] = useState(false);
+  const [newPin, setNewPin] = useState("");
+
   const updateNameMutation = useMutation({
     mutationFn: async (data: { firstName: string; lastName?: string }) => {
       return await apiRequest("PATCH", "/api/user/name", data);
@@ -84,6 +102,38 @@ export default function Configuracoes() {
       return;
     }
     updateNameMutation.mutate({ firstName, lastName: lastName || undefined });
+  };
+
+  const handleToggleDisguise = (checked: boolean) => {
+    if (checked && !preferences?.disguisePin) {
+      setShowPinDialog(true);
+      return;
+    }
+    updatePrefsMutation.mutate({ disguiseEnabled: checked });
+  };
+
+  const handleSetPin = () => {
+    if (newPin.length < 4) {
+      toast({
+        title: "PIN muito curto",
+        description: "O PIN deve ter entre 4 e 6 dígitos.",
+        variant: "destructive",
+      });
+      return;
+    }
+    updatePrefsMutation.mutate({ 
+      disguisePin: newPin,
+      disguiseEnabled: true 
+    }, {
+      onSuccess: () => {
+        setShowPinDialog(false);
+        setNewPin("");
+        toast({
+          title: "Modo Disfarce ativado",
+          description: "O disfarce de calculadora será exibido ao abrir o app.",
+        });
+      }
+    });
   };
 
   const handleDeleteAccount = () => {
@@ -202,25 +252,36 @@ export default function Configuracoes() {
                     <EyeOff className="w-5 h-5 text-primary" />
                   </div>
                   <div className="flex-1">
-                    <p className="font-bold text-base">Ativar camuflagem do app</p>
-                    <p className="text-xs text-muted-foreground">Mostra tela de disfarce ao abrir o app (recomendado)</p>
+                    <p className="font-bold text-base">Modo Disfarce</p>
+                    <p className="text-xs text-muted-foreground">Ocultar o app sob uma calculadora funcional</p>
                   </div>
                 </div>
-                <Switch defaultChecked className="data-[state=checked]:bg-green-500" />
+                <Switch 
+                  checked={preferences?.disguiseEnabled || false} 
+                  onCheckedChange={handleToggleDisguise}
+                  className="data-[state=checked]:bg-green-500" 
+                />
               </div>
-              <Separator className="mx-6 w-auto" />
-              <div className="flex items-center justify-between py-5 px-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-2xl bg-green-500/10 flex items-center justify-center">
-                    <MapPin className="w-5 h-5 text-green-500" />
+              {preferences?.disguiseEnabled && (
+                <>
+                  <Separator className="mx-6 w-auto" />
+                  <div 
+                    className="flex items-center justify-between py-5 px-6 hover:bg-muted/30 cursor-pointer group"
+                    onClick={() => setShowPinDialog(true)}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center">
+                        <Key className="w-5 h-5 text-primary opacity-60" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-base">Alterar PIN de acesso</p>
+                        <p className="text-xs text-muted-foreground">PIN usado para desbloquear o app real</p>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
                   </div>
-                  <div className="flex-1">
-                    <p className="font-bold text-base">Precisão de localização</p>
-                    <p className="text-xs text-muted-foreground">Alta precisão (GPS + rede)</p>
-                  </div>
-                </div>
-                <ChevronRight className="w-5 h-5 text-muted-foreground" />
-              </div>
+                </>
+              )}
             </div>
           </section>
 
@@ -233,39 +294,8 @@ export default function Configuracoes() {
                     <Bell className="w-5 h-5 text-yellow-500" />
                   </div>
                   <div className="flex-1">
-                    <p className="font-bold text-base">Ativar notificações</p>
-                    <p className="text-xs text-muted-foreground">Receber notificações do aplicativo</p>
-                  </div>
-                </div>
-                <Switch defaultChecked className="data-[state=checked]:bg-green-500" />
-              </div>
-              <Separator className="mx-6 w-auto" />
-              <div className="flex items-center justify-between py-5 px-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-2xl bg-red-500/10 flex items-center justify-center">
-                    <Shield className="w-5 h-5 text-red-500" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-bold text-base">Áreas de risco próximas</p>
-                    <p className="text-xs text-muted-foreground">Alertas ao entrar em áreas de risco</p>
-                  </div>
-                </div>
-                <Switch defaultChecked className="data-[state=checked]:bg-green-500" />
-              </div>
-            </div>
-          </section>
-
-          <section className="space-y-3">
-            <h3 className="text-sm font-bold uppercase text-muted-foreground tracking-widest px-2">Mapa e Localização</h3>
-            <div className="bg-card rounded-3xl border border-border overflow-hidden shadow-sm">
-              <div className="flex items-center justify-between py-5 px-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-2xl bg-orange-500/10 flex items-center justify-center">
-                    <MapPin className="w-5 h-5 text-orange-500" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-bold text-base">Mostrar áreas de risco por padrão</p>
-                    <p className="text-xs text-muted-foreground">Exibir áreas de risco ao abrir o mapa</p>
+                    <p className="font-bold text-base">Alertas de segurança</p>
+                    <p className="text-xs text-muted-foreground">Notificações sobre perigos na sua rota</p>
                   </div>
                 </div>
                 <Switch defaultChecked className="data-[state=checked]:bg-green-500" />
@@ -341,10 +371,10 @@ export default function Configuracoes() {
       </div>
 
       <Dialog open={showEditName} onOpenChange={setShowEditName}>
-        <DialogContent>
+        <DialogContent className="rounded-3xl">
           <DialogHeader>
-            <DialogTitle>Editar nome</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-2xl font-bold">Editar nome</DialogTitle>
+            <DialogDescription className="text-base">
               Altere seu nome de exibição no aplicativo.
             </DialogDescription>
           </DialogHeader>
@@ -356,6 +386,7 @@ export default function Configuracoes() {
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 placeholder="Seu nome"
+                className="h-12 rounded-2xl"
                 data-testid="input-first-name"
               />
             </div>
@@ -366,20 +397,63 @@ export default function Configuracoes() {
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 placeholder="Seu sobrenome"
+                className="h-12 rounded-2xl"
                 data-testid="input-last-name"
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditName(false)}>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" className="rounded-2xl h-12 font-bold" onClick={() => setShowEditName(false)}>
               Cancelar
             </Button>
             <Button 
+              className="rounded-2xl h-12 font-bold"
               onClick={handleUpdateName}
               disabled={updateNameMutation.isPending}
               data-testid="button-save-name"
             >
               {updateNameMutation.isPending ? "Salvando..." : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showPinDialog} onOpenChange={setShowPinDialog}>
+        <DialogContent className="rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold">Definir PIN de Disfarce</DialogTitle>
+            <DialogDescription className="text-base">
+              Digite um código de 4 a 6 números. Você usará este código na calculadora para acessar o app real.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="space-y-2">
+              <Label htmlFor="pin">PIN de Acesso</Label>
+              <Input
+                id="pin"
+                type="password"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={6}
+                value={newPin}
+                onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
+                placeholder="Ex: 1234"
+                className="h-12 text-lg rounded-2xl text-center tracking-[1em] font-bold"
+                data-testid="input-disguise-pin"
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" className="rounded-2xl h-12 font-bold" onClick={() => setShowPinDialog(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              className="rounded-2xl h-12 font-bold"
+              onClick={handleSetPin}
+              disabled={updatePrefsMutation.isPending}
+              data-testid="button-save-pin"
+            >
+              {updatePrefsMutation.isPending ? "Salvando..." : "Ativar Disfarce"}
             </Button>
           </DialogFooter>
         </DialogContent>
