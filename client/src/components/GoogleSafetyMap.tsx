@@ -901,7 +901,7 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
       </div>
 
       {showRoutePlanner && (
-        <div className="absolute top-4 left-3 right-3 sm:left-4 sm:right-20 z-10 bg-card p-3 rounded-lg shadow-lg max-w-[calc(100%-60px)] sm:max-w-none">
+        <div className="absolute top-[calc(env(safe-area-inset-top)+70px)] sm:top-4 left-3 right-3 sm:left-4 sm:right-20 z-10 bg-card p-3 rounded-lg shadow-lg max-w-[calc(100%-60px)] sm:max-w-none max-h-[calc(100%-env(safe-area-inset-top)-90px)] sm:max-h-none overflow-y-auto">
           <div className="flex items-center gap-2 mb-2">
             <Button
               size="icon"
