@@ -135,9 +135,9 @@ export default function Home() {
                   )}
                 </Button>
               </SheetTrigger>
-              <SheetContent>
+              <SheetContent className="overflow-y-auto">
                 <div className="flex flex-col h-full">
-                  <div className="py-6">
+                  <div className="py-6 flex-shrink-0">
                     <h2 className="text-2xl font-display font-bold mb-1">
                       {isAuthenticated 
                         ? (isMobile ? labels.greeting.mobile(user?.firstName || '') : labels.greeting.desktop(user?.firstName || ''))
@@ -152,7 +152,7 @@ export default function Home() {
                     </p>
                   </div>
 
-                  <div className="flex-1 space-y-4">
+                  <div className="flex-1 space-y-4 overflow-y-auto">
                     {!isAuthenticated ? (
                       <a href="/api/login" className="w-full">
                         <Button className="w-full" size="lg">
@@ -160,20 +160,75 @@ export default function Home() {
                         </Button>
                       </a>
                     ) : (
-                      <div className="space-y-2">
+                      <div className="space-y-4">
+                        {/* Seção de Nível e Reputação */}
+                        <div className="p-4 bg-primary/5 rounded-xl border border-primary/20">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                              user?.userLevel === 'verificado' ? 'bg-blue-500' :
+                              user?.userLevel === 'normal' ? 'bg-green-500' : 'bg-gray-400'
+                            }`}>
+                              <Shield className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                              <div className="font-bold capitalize">
+                                {user?.userLevel === 'verificado' ? 'Verificada' :
+                                 user?.userLevel === 'normal' ? 'Normal' : 'Nova'}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {user?.reputationScore || 0} pontos de reputação
+                              </div>
+                            </div>
+                          </div>
+                          {/* Barra de progresso para próximo nível */}
+                          {user?.userLevel !== 'verificado' && (
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-xs text-muted-foreground">
+                                <span>Progresso</span>
+                                <span>
+                                  {user?.userLevel === 'novo' 
+                                    ? `${Math.min(100, Math.round(((user?.reputationScore || 0) / 30) * 100))}% para Normal`
+                                    : `${Math.min(100, Math.round(((user?.reputationScore || 0) / 50) * 100))}% para Verificada`
+                                  }
+                                </span>
+                              </div>
+                              <div className="h-2 bg-muted rounded-full overflow-hidden">
+                                <div 
+                                  className="h-full bg-primary rounded-full transition-all"
+                                  style={{ 
+                                    width: `${user?.userLevel === 'novo' 
+                                      ? Math.min(100, ((user?.reputationScore || 0) / 30) * 100)
+                                      : Math.min(100, ((user?.reputationScore || 0) / 50) * 100)
+                                    }%` 
+                                  }}
+                                />
+                              </div>
+                              <p className="text-[10px] text-muted-foreground mt-2">
+                                Tenha seus relatos confirmados pela comunidade para subir de nível
+                              </p>
+                            </div>
+                          )}
+                          {user?.userLevel === 'verificado' && (
+                            <p className="text-xs text-blue-600 dark:text-blue-400">
+                              Parabéns! Você é uma usuária verificada
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Estatísticas de Impacto */}
                         <div className="p-4 bg-muted/30 rounded-xl border border-border">
                           <h3 className="font-semibold mb-2">
                             {isMobile ? labels.impactTitle.mobile : labels.impactTitle.desktop}
                           </h3>
                           <div className="grid grid-cols-2 gap-4">
                             <div className="text-center">
-                              <div className="text-2xl font-bold text-primary">0</div>
+                              <div className="text-2xl font-bold text-primary">{user?.totalReportsCount || 0}</div>
                               <div className="text-xs text-muted-foreground">
                                 {isMobile ? labels.reports.mobile : labels.reports.desktop}
                               </div>
                             </div>
                             <div className="text-center">
-                              <div className="text-2xl font-bold text-[hsl(var(--safe))]">0</div>
+                              <div className="text-2xl font-bold text-[hsl(var(--safe))]">{user?.verifiedReportsCount || 0}</div>
                               <div className="text-xs text-muted-foreground">
                                 {isMobile ? labels.verifications.mobile : labels.verifications.desktop}
                               </div>
@@ -201,7 +256,7 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <div className="pt-6 border-t border-border space-y-2">
+                  <div className="pt-6 border-t border-border space-y-2 flex-shrink-0">
                     {isAuthenticated && (
                       <Link href="/configuracoes">
                         <Button 
@@ -214,7 +269,7 @@ export default function Home() {
                         </Button>
                       </Link>
                     )}
-                    <div className="flex gap-2 text-xs">
+                    <div className="flex gap-2 text-xs flex-wrap">
                       <Link href="/termos">
                         <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" data-testid="link-terms">
                           {isMobile ? labels.terms.mobile : labels.terms.desktop}
