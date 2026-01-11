@@ -445,8 +445,9 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
 
       // Inicia a animação assim que o mapa estiver pronto, sem esperar muito
       const startAnimation = (lat: number, lng: number) => {
-        map.flyTo([lat, lng], 16, {
-          duration: 2.5, // Levemente mais rápido
+        // Usa o zoom 18 para ser bem exato na localização
+        map.flyTo([lat, lng], 18, {
+          duration: 2.5,
           easeLinearity: 0.25
         });
         
@@ -458,24 +459,25 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
         setIsInitialAnimation(false);
       };
 
-      // Se já temos a posição, voa agora mesmo
+      // Se já temos a posição exata (não aproximada), voa agora mesmo
       if (userPosition) {
         startAnimation(userPosition.lat, userPosition.lng);
       } else {
-        // Se não, voa assim que encontrar
+        // Força a geolocalização exata
         const onLocationFound = (e: L.LocationEvent) => {
+          // Garante que usamos a posição exata detectada pelo GPS/Navegador
           startAnimation(e.latlng.lat, e.latlng.lng);
           map.off('locationfound', onLocationFound);
         };
         map.on('locationfound', onLocationFound);
         
-        // Timer de segurança menor: se em 800ms não achar, voa para o padrão (BH)
+        // Timer de segurança: se em 1500ms não achar o GPS, usa BH como fallback
         const safetyTimer = setTimeout(() => {
           if (isInitialAnimation) {
             startAnimation(-19.9167, -43.9345);
             map.off('locationfound', onLocationFound);
           }
-        }, 800);
+        }, 1500);
         return () => {
           clearTimeout(safetyTimer);
           map.off('locationfound', onLocationFound);
