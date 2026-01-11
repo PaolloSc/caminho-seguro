@@ -402,6 +402,10 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
   const [showRoutePlanner, setShowRoutePlanner] = useState(false);
   const [destinationQuery, setDestinationQuery] = useState('');
   const [isSearchingRoute, setIsSearchingRoute] = useState(false);
+  const [placeSuggestions, setPlaceSuggestions] = useState<google.maps.places.AutocompletePrediction[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null);
   const [routeCoords, setRouteCoords] = useState<google.maps.LatLngLiteral[] | null>(null);
   const [routeSafety, setRouteSafety] = useState<{ score: number; nearbyDangers: number; totalSeverity: number } | null>(null);
   const [destinationMarker, setDestinationMarker] = useState<google.maps.LatLngLiteral | null>(null);
@@ -457,6 +461,8 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
 
   const onLoad = useCallback((mapInstance: google.maps.Map) => {
     setMap(mapInstance);
+    // Inicializa serviço do Places Autocomplete
+    autocompleteServiceRef.current = new google.maps.places.AutocompleteService();
   }, []);
 
   const onUnmount = useCallback(() => {
@@ -466,6 +472,55 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
   const handlePositionUpdate = useCallback((lat: number, lng: number) => {
     setUserPosition({ lat, lng });
   }, []);
+
+  // Busca sugestões de lugares conforme digita
+  const searchPlaceSuggestions = useCallback((input: string) => {
+    if (!input.trim() || !autocompleteServiceRef.current) {
+      setPlaceSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    const request: google.maps.places.AutocompletionRequest = {
+      input,
+      componentRestrictions: { country: 'br' },
+      types: ['geocode', 'establishment'],
+      language: 'pt-BR'
+    };
+
+    // Adiciona localização do usuário para priorizar resultados próximos
+    if (userPosition) {
+      request.location = new google.maps.LatLng(userPosition.lat, userPosition.lng);
+      request.radius = 50000; // 50km
+    }
+
+    autocompleteServiceRef.current.getPlacePredictions(request, (predictions, status) => {
+      if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
+        setPlaceSuggestions(predictions.slice(0, 5));
+        setShowSuggestions(true);
+      } else {
+        setPlaceSuggestions([]);
+        setShowSuggestions(false);
+      }
+    });
+  }, [userPosition]);
+
+  // Seleciona uma sugestão
+  const selectPlaceSuggestion = useCallback((prediction: google.maps.places.AutocompletePrediction) => {
+    setDestinationQuery(prediction.description);
+    setPlaceSuggestions([]);
+    setShowSuggestions(false);
+  }, []);
+
+  // Debounce para buscar sugestões - só busca se input estiver focado
+  useEffect(() => {
+    if (!isInputFocused) return;
+    
+    const timer = setTimeout(() => {
+      searchPlaceSuggestions(destinationQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [destinationQuery, searchPlaceSuggestions, isInputFocused]);
 
   const toggleNavigationMode = useCallback(() => {
     setNavigationMode(prev => !prev);
@@ -980,7 +1035,7 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
         })()}
       </GoogleMap>
 
-      <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
+      <div className="absolute top-4 right-4 flex flex-col gap-2 z-[50]">
         <Button
           size="icon"
           variant="secondary"
@@ -1045,16 +1100,57 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
 
             <div className="space-y-3">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
                 <input
                   type="text"
                   placeholder="Para onde você vai?"
                   value={destinationQuery}
                   onChange={(e) => setDestinationQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearchRoute()}
-                  className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border bg-background focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      setShowSuggestions(false);
+                      handleSearchRoute();
+                    }
+                    if (e.key === 'Escape') {
+                      setShowSuggestions(false);
+                    }
+                  }}
+                  onFocus={() => {
+                    setIsInputFocused(true);
+                    if (placeSuggestions.length > 0) setShowSuggestions(true);
+                  }}
+                  onBlur={() => {
+                    setIsInputFocused(false);
+                    setTimeout(() => setShowSuggestions(false), 200);
+                  }}
+                  className="w-full pl-9 pr-3 py-2.5 text-sm rounded-lg border bg-background focus:ring-2 focus:ring-primary/20 transition-all outline-none"
                   data-testid="input-destination"
+                  autoComplete="off"
                 />
+                
+                {showSuggestions && placeSuggestions.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg overflow-hidden z-[10000]">
+                    {placeSuggestions.map((suggestion, index) => (
+                      <button
+                        key={suggestion.place_id}
+                        type="button"
+                        onClick={() => selectPlaceSuggestion(suggestion)}
+                        className="w-full px-3 py-2.5 text-left text-sm hover:bg-muted/50 transition-colors flex items-start gap-2 border-b border-border/50 last:border-0"
+                        data-testid={`suggestion-${index}`}
+                      >
+                        <MapPin className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-medium truncate">
+                            {suggestion.structured_formatting.main_text}
+                          </span>
+                          <span className="text-xs text-muted-foreground truncate">
+                            {suggestion.structured_formatting.secondary_text}
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <Button
