@@ -71,6 +71,15 @@ export async function registerRoutes(
   await setupAuth(app);
   registerAuthRoutes(app);
 
+  // === CONFIGURAÇÃO DO MAPA ===
+  // Endpoint para fornecer configuração do mapa
+  // Nota: A chave do Google Maps precisa estar no cliente para funcionar.
+  // A proteção adequada é configurar restrições de HTTP Referrer no Google Cloud Console.
+  app.get('/api/config/maps', (req, res) => {
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY || '';
+    res.json({ apiKey: apiKey.trim() });
+  });
+
   // === RELATÓRIOS ===
   
   // Lista de relatórios (delay desativado para testes)

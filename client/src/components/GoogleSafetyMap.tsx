@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useVerifyReport, useDownvoteReport, useFlagReport } from "@/hooks/use-reports";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigationMode } from "@/hooks/use-navigation-mode";
+import { useMapsConfig } from "@/hooks/use-maps-config";
 
 interface POI {
   id: string;
@@ -249,7 +250,8 @@ export function GoogleSafetyMap({ reports, onAddReport, onViewReport, className,
     enabled: navigationMode
   });
 
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+  const { data: mapsConfig, isLoading: isLoadingConfig } = useMapsConfig();
+  const apiKey = mapsConfig?.apiKey || '';
   
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
@@ -438,6 +440,15 @@ export function GoogleSafetyMap({ reports, onAddReport, onViewReport, className,
     strokeWeight: 2,
     scale: size / 4,
   });
+
+  if (isLoadingConfig || !apiKey) {
+    return (
+      <div className="flex items-center justify-center h-full bg-muted">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <span className="ml-2 text-muted-foreground">Carregando configurações...</span>
+      </div>
+    );
+  }
 
   if (loadError) {
     return (

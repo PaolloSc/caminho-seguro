@@ -18,7 +18,7 @@ Preferred communication style: Simple, everyday language.
 - **Routing**: Wouter (lightweight React router)
 - **State Management**: TanStack React Query for server state
 - **Styling**: Tailwind CSS with custom theme variables and shadcn/ui components
-- **Mapping**: Leaflet with react-leaflet bindings using OpenStreetMap tiles
+- **Mapping**: Google Maps with @react-google-maps/api bindings
 - **Build Tool**: Vite with React plugin
 
 The frontend follows a component-based architecture with:
@@ -96,8 +96,19 @@ The `shared/` directory contains code used by both frontend and backend:
 - Required environment variables: `ISSUER_URL`, `REPL_ID`, `SESSION_SECRET`, `DATABASE_URL`
 
 ### Mapping
-- **OpenStreetMap**: Tile provider for map display
-- **Leaflet**: Core mapping library with React bindings
+- **Google Maps**: Primary map provider via Google Maps JavaScript API
+- **@react-google-maps/api**: React bindings for Google Maps
+- **GOOGLE_MAPS_API_KEY**: Required secret for map functionality
+- API key is served via `/api/config/maps` endpoint
+
+**IMPORTANTE - Segurança da API Key do Google Maps:**
+A chave do Google Maps **deve** estar disponível no cliente para funcionar (é por design da API).
+Para proteger a chave, configure restrições no **Google Cloud Console**:
+1. Acesse https://console.cloud.google.com/apis/credentials
+2. Selecione a chave API
+3. Em "Restrições de aplicativo", selecione "Referenciadores HTTP"
+4. Adicione os domínios permitidos (ex: `*.replit.app/*`, `*.repl.co/*`)
+5. Em "Restrições de API", limite para apenas "Maps JavaScript API"
 
 ### UI Components
 - **shadcn/ui**: Pre-built accessible components using Radix UI primitives
