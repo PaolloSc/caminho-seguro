@@ -412,6 +412,33 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
     enabled: navigationMode
   });
 
+  // Configurações de alta precisão do GPS
+  const geoOptions: PositionOptions = useMemo(() => ({
+    enableHighAccuracy: true,
+    timeout: 10000,
+    maximumAge: 0 // Sempre buscar posição mais recente
+  }), []);
+
+  // Monitoramento contínuo da localização para maior precisão
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const newPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setUserPosition(newPos);
+      },
+      (error) => {
+        console.log('Erro de geolocalização:', error.message);
+      },
+      geoOptions
+    );
+
+    return () => {
+      navigator.geolocation.clearWatch(watchId);
+    };
+  }, [geoOptions]);
+
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: apiKey,
@@ -450,10 +477,11 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
           map.panTo(newPos);
           map.setZoom(18);
         },
-        () => {}
+        () => {},
+        geoOptions
       );
     }
-  }, [navigationMode, userPosition, map]);
+  }, [navigationMode, userPosition, map, geoOptions]);
 
   const refreshPOIs = useCallback(() => {
     if (!showPOIs || !map) return;
@@ -494,10 +522,10 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
             setIsInitialAnimation(false);
           }, 500);
         },
-        { enableHighAccuracy: true, timeout: 5000 }
+        geoOptions
       );
     }
-  }, [map, isInitialAnimation]);
+  }, [map, isInitialAnimation, geoOptions]);
 
   useEffect(() => {
     if (navigationMode && navPosition && map) {
@@ -532,7 +560,8 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
         (pos) => {
           setUserPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         },
-        () => {}
+        () => {},
+        geoOptions
       );
       return;
     }
@@ -619,7 +648,8 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
             description: "Não foi possível obter sua localização.",
             variant: "destructive"
           });
-        }
+        },
+        geoOptions
       );
     }
   };
