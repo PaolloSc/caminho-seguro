@@ -451,7 +451,9 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
         });
         
         setTimeout(() => {
-          map.invalidateSize();
+          if (map) {
+            map.invalidateSize();
+          }
         }, 2700);
         setIsInitialAnimation(false);
       };
