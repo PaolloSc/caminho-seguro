@@ -6,6 +6,7 @@ import {
   reportVerifications,
   users,
   auditLogs,
+  userPreferences,
   type Report,
   type InsertReport,
   type Comment,
@@ -13,10 +14,13 @@ import {
   type ReportFlag,
   type InsertReportFlag,
   type User,
-  type AuditLog
+  type AuditLog,
+  type UserPreferences,
+  type UpdateUserPreferences
 } from "@shared/schema";
 import { eq, sql, lt, and, desc } from "drizzle-orm";
 import crypto from "crypto";
+import bcrypt from "bcrypt";
 
 // === Funções de Hash para LGPD ===
 function hashAnonymous(value: string): string {
@@ -64,6 +68,11 @@ export interface IStorage {
   findDuplicateReport(lat: number, lng: number, description: string, hoursAgo?: number): Promise<{ isDuplicate: boolean; similarity?: number; originalId?: number }>;
   updateUserReputation(userId: string, action: 'report_verified' | 'report_created' | 'report_flagged'): Promise<void>;
   createAuditLog(log: { action: string; userId: string; ip?: string; entityType: string; entityId?: number; metadata?: any; lat?: number; lng?: number }): Promise<void>;
+  
+  // === Preferências de Usuário ===
+  getUserPreferences(userId: string): Promise<UserPreferences | undefined>;
+  updateUserPreferences(userId: string, data: UpdateUserPreferences): Promise<UserPreferences>;
+  verifyDisguisePin(userId: string, pin: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -471,6 +480,69 @@ export class DatabaseStorage implements IStorage {
       lat: log.lat,
       lng: log.lng,
     });
+  }
+
+  // === Preferências de Usuário ===
+  
+  async getUserPreferences(userId: string): Promise<UserPreferences | undefined> {
+    const [prefs] = await db
+      .select()
+      .from(userPreferences)
+      .where(eq(userPreferences.userId, userId))
+      .limit(1);
+    
+    if (!prefs) {
+      // Criar preferências padrão SEM PIN (camuflagem desativada por padrão)
+      const [newPrefs] = await db
+        .insert(userPreferences)
+        .values({ userId })
+        .returning();
+      return newPrefs;
+    }
+    
+    return prefs;
+  }
+
+  async updateUserPreferences(userId: string, data: UpdateUserPreferences): Promise<UserPreferences> {
+    // Verificar se já existe
+    const existing = await this.getUserPreferences(userId);
+    
+    // Se houver novo PIN, fazer hash antes de salvar
+    const dataToSave = { ...data };
+    if (data.disguisePin) {
+      dataToSave.disguisePin = await bcrypt.hash(data.disguisePin, 10);
+    }
+    
+    // Se estiver ativando camuflagem, verificar se PIN foi definido
+    if (data.disguiseEnabled === true && !existing?.disguisePin && !data.disguisePin) {
+      throw new Error('PIN_REQUIRED');
+    }
+    
+    if (!existing) {
+      // Criar com os dados fornecidos
+      const [newPrefs] = await db
+        .insert(userPreferences)
+        .values({ userId, ...dataToSave })
+        .returning();
+      return newPrefs;
+    }
+    
+    // Atualizar existente
+    const [updated] = await db
+      .update(userPreferences)
+      .set({ ...dataToSave, updatedAt: new Date() })
+      .where(eq(userPreferences.userId, userId))
+      .returning();
+    
+    return updated;
+  }
+
+  async verifyDisguisePin(userId: string, pin: string): Promise<boolean> {
+    const prefs = await this.getUserPreferences(userId);
+    if (!prefs || !prefs.disguisePin) return false;
+    
+    // Comparar PIN com hash armazenado
+    return await bcrypt.compare(pin, prefs.disguisePin);
   }
 }
 

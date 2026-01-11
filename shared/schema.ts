@@ -48,6 +48,24 @@ export const reportVerifications = pgTable("report_verifications", {
   uniqueUserReport: uniqueIndex("unique_user_report_verification").on(table.userId, table.reportId),
 }));
 
+// === PREFERÊNCIAS DE USUÁRIO ===
+export const userPreferences = pgTable("user_preferences", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().unique(),
+  // Camuflagem (começa desativada até usuária definir PIN)
+  disguiseEnabled: boolean("disguise_enabled").default(false),
+  disguiseType: text("disguise_type").default("calculator"), // 'calculator', 'notes', 'weather'
+  disguisePin: varchar("disguise_pin", { length: 100 }), // PIN hasheado (null até ser definido)
+  // Localização
+  locationPrecision: text("location_precision").default("high"), // 'high' (GPS+rede), 'gps_only', 'network_only'
+  // Notificações
+  notificationsEnabled: boolean("notifications_enabled").default(true),
+  riskAreaAlerts: boolean("risk_area_alerts").default(true),
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // === SCHEMAS ===
 export const insertReportSchema = createInsertSchema(reports).omit({ 
   id: true, 
@@ -71,6 +89,23 @@ export const insertReportFlagSchema = createInsertSchema(reportFlags).omit({
   createdAt: true
 });
 
+// === SCHEMAS DE PREFERÊNCIAS ===
+export const insertUserPreferencesSchema = createInsertSchema(userPreferences).omit({
+  id: true,
+  userId: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateUserPreferencesSchema = z.object({
+  disguiseEnabled: z.boolean().optional(),
+  disguiseType: z.enum(['calculator', 'notes', 'weather']).optional(),
+  disguisePin: z.string().min(4).max(6).regex(/^\d+$/).optional(),
+  locationPrecision: z.enum(['high', 'gps_only', 'network_only']).optional(),
+  notificationsEnabled: z.boolean().optional(),
+  riskAreaAlerts: z.boolean().optional(),
+});
+
 // === TYPES ===
 export type Report = typeof reports.$inferSelect & {
   userLevel?: string; // 'novo' | 'normal' | 'verificado'
@@ -81,3 +116,5 @@ export type Comment = typeof comments.$inferSelect;
 export type InsertComment = z.infer<typeof insertCommentSchema>;
 export type ReportFlag = typeof reportFlags.$inferSelect;
 export type InsertReportFlag = z.infer<typeof insertReportFlagSchema>;
+export type UserPreferences = typeof userPreferences.$inferSelect;
+export type UpdateUserPreferences = z.infer<typeof updateUserPreferencesSchema>;

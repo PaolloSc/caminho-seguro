@@ -383,6 +383,59 @@ export async function registerRoutes(
     }
   });
 
+  // === PREFERÊNCIAS DE USUÁRIO ===
+  
+  // Obter preferências
+  app.get(api.preferences.get.path, isAuthenticated, async (req, res) => {
+    const user = req.user as any;
+    const prefs = await storage.getUserPreferences(user.claims.sub);
+    res.json(prefs);
+  });
+
+  // Atualizar preferências
+  app.patch(api.preferences.update.path, isAuthenticated, async (req, res) => {
+    try {
+      const input = api.preferences.update.input.parse(req.body);
+      const user = req.user as any;
+      
+      const updated = await storage.updateUserPreferences(user.claims.sub, input);
+      res.json(updated);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      if (err instanceof Error && err.message === 'PIN_REQUIRED') {
+        return res.status(400).json({
+          message: 'Você precisa definir um PIN antes de ativar a camuflagem',
+          field: 'disguisePin',
+        });
+      }
+      throw err;
+    }
+  });
+
+  // Verificar PIN de camuflagem
+  app.post(api.preferences.verifyPin.path, isAuthenticated, async (req, res) => {
+    try {
+      const input = api.preferences.verifyPin.input.parse(req.body);
+      const user = req.user as any;
+      
+      const valid = await storage.verifyDisguisePin(user.claims.sub, input.pin);
+      res.json({ valid });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
   // === DADOS INICIAIS (desenvolvimento) ===
   const existing = await storage.getReports(0); // Sem delay para seed
   if (existing.length === 0) {

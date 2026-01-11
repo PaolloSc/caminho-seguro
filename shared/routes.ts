@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertReportSchema, reports, comments, insertCommentSchema, reportFlags, insertReportFlagSchema } from './schema';
+import { insertReportSchema, reports, comments, insertCommentSchema, reportFlags, insertReportFlagSchema, userPreferences, updateUserPreferencesSchema } from './schema';
 
 export const errorSchemas = {
   validation: z.object({
@@ -120,7 +120,38 @@ export const api = {
         400: errorSchemas.validation,
       },
     },
-  }
+  },
+  preferences: {
+    get: {
+      method: 'GET' as const,
+      path: '/api/user/preferences',
+      responses: {
+        200: z.custom<typeof userPreferences.$inferSelect>(),
+        401: errorSchemas.unauthorized,
+      },
+    },
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/user/preferences',
+      input: updateUserPreferencesSchema,
+      responses: {
+        200: z.custom<typeof userPreferences.$inferSelect>(),
+        400: errorSchemas.validation,
+        401: errorSchemas.unauthorized,
+      },
+    },
+    verifyPin: {
+      method: 'POST' as const,
+      path: '/api/user/preferences/verify-pin',
+      input: z.object({
+        pin: z.string().min(4).max(6),
+      }),
+      responses: {
+        200: z.object({ valid: z.boolean() }),
+        401: errorSchemas.unauthorized,
+      },
+    },
+  },
 };
 
 export function buildUrl(path: string, params?: Record<string, string | number>): string {
