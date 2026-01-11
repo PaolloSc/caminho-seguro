@@ -152,108 +152,113 @@ export default function Home() {
                     </p>
                   </div>
 
-                  <div className="flex-1 space-y-4 overflow-y-auto">
+                  <div className="flex-1 space-y-4 overflow-y-auto pt-4">
+                    {isAuthenticated ? (
+                      <div className="flex flex-col items-center mb-8">
+                        <div className="relative mb-4">
+                          <Avatar className="w-32 h-32 border-4 border-primary/20 shadow-xl">
+                            <AvatarImage src={user?.profileImageUrl || undefined} />
+                            <AvatarFallback className="text-4xl bg-primary text-primary-foreground">
+                              {user?.firstName?.[0] || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                        </div>
+                        <h3 className="text-2xl font-bold text-foreground">{user?.firstName} {user?.lastName}</h3>
+                        <p className="text-muted-foreground font-medium">CaminhoSeguro</p>
+                      </div>
+                    ) : (
+                      <div className="py-6 flex-shrink-0">
+                        <h2 className="text-2xl font-display font-bold mb-1">
+                          {isMobile ? labels.guestGreeting.mobile : labels.guestGreeting.desktop}
+                        </h2>
+                        <p className="text-muted-foreground">
+                          {isMobile ? labels.guestMessage.mobile : labels.guestMessage.desktop}
+                        </p>
+                      </div>
+                    )}
+
                     {!isAuthenticated ? (
-                      <a href="/api/login" className="w-full">
+                      <a href="/api/login" className="w-full block">
                         <Button className="w-full" size="lg">
                           {isMobile ? labels.loginButton.mobile : labels.loginButton.desktop}
                         </Button>
                       </a>
                     ) : (
-                      <div className="space-y-4">
-                        {/* Seção de Nível e Reputação */}
-                        <div className="p-4 bg-primary/5 rounded-xl border border-primary/20">
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                              user?.userLevel === 'verificado' ? 'bg-blue-500' :
-                              user?.userLevel === 'normal' ? 'bg-green-500' : 'bg-gray-400'
-                            }`}>
-                              <Shield className="w-5 h-5 text-white" />
-                            </div>
-                            <div>
-                              <div className="font-bold capitalize">
-                                {user?.userLevel === 'verificado' ? 'Verificada' :
-                                 user?.userLevel === 'normal' ? 'Normal' : 'Nova'}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                {user?.reputationScore || 0} pontos de reputação
-                              </div>
-                            </div>
-                          </div>
-                          {/* Barra de progresso para próximo nível */}
-                          {user?.userLevel !== 'verificado' && (
-                            <div className="space-y-1">
-                              <div className="flex justify-between text-xs text-muted-foreground">
-                                <span>Progresso</span>
-                                <span>
-                                  {user?.userLevel === 'novo' 
-                                    ? `${Math.min(100, Math.round(((user?.reputationScore || 0) / 30) * 100))}% para Normal`
-                                    : `${Math.min(100, Math.round(((user?.reputationScore || 0) / 50) * 100))}% para Verificada`
-                                  }
-                                </span>
-                              </div>
-                              <div className="h-2 bg-muted rounded-full overflow-hidden">
-                                <div 
-                                  className="h-full bg-primary rounded-full transition-all"
-                                  style={{ 
-                                    width: `${user?.userLevel === 'novo' 
-                                      ? Math.min(100, ((user?.reputationScore || 0) / 30) * 100)
-                                      : Math.min(100, ((user?.reputationScore || 0) / 50) * 100)
-                                    }%` 
-                                  }}
-                                />
-                              </div>
-                              <p className="text-[10px] text-muted-foreground mt-2">
-                                Tenha seus relatos confirmados pela comunidade para subir de nível
-                              </p>
-                            </div>
-                          )}
-                          {user?.userLevel === 'verificado' && (
-                            <p className="text-xs text-blue-600 dark:text-blue-400">
-                              Parabéns! Você é uma usuária verificada
-                            </p>
-                          )}
+                      <div className="space-y-6">
+                        {/* Menu de Navegação */}
+                        <div className="space-y-1">
+                          {[
+                            { icon: MapPin, label: "Mapa de segurança", color: "text-red-500", href: "/" },
+                            { icon: Shield, label: "Meus Anjos", color: "text-green-500", href: "/configuracoes" },
+                            { icon: Settings, label: "Configurações", color: "text-blue-500", href: "/configuracoes" },
+                          ].map((item, i) => (
+                            <Link key={i} href={item.href}>
+                              <Button variant="ghost" className="w-full justify-start gap-4 h-14 hover:bg-muted/50 rounded-2xl no-default-hover-elevate">
+                                <item.icon className={`w-6 h-6 ${item.color}`} />
+                                <span className="font-bold text-lg">{item.label}</span>
+                              </Button>
+                            </Link>
+                          ))}
                         </div>
 
-                        {/* Estatísticas de Impacto */}
-                        <div className="p-4 bg-muted/30 rounded-xl border border-border">
-                          <h3 className="font-semibold mb-2">
-                            {isMobile ? labels.impactTitle.mobile : labels.impactTitle.desktop}
-                          </h3>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="text-center">
-                              <div className="text-2xl font-bold text-primary">{user?.totalReportsCount || 0}</div>
-                              <div className="text-xs text-muted-foreground">
-                                {isMobile ? labels.reports.mobile : labels.reports.desktop}
+                        {/* Seção de Reputação (Minha Conta) */}
+                        <div className="pt-4 border-t border-border">
+                          <h4 className="text-xs font-bold uppercase text-muted-foreground tracking-widest mb-4 px-4">Minha Conta</h4>
+                          <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10">
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                                user?.userLevel === 'verificado' ? 'bg-blue-500' :
+                                user?.userLevel === 'normal' ? 'bg-green-500' : 'bg-gray-400'
+                              }`}>
+                                <Shield className="w-5 h-5 text-white" />
+                              </div>
+                              <div>
+                                <div className="font-bold capitalize">
+                                  {user?.userLevel === 'verificado' ? 'Verificada' :
+                                   user?.userLevel === 'normal' ? 'Normal' : 'Nova'}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {user?.reputationScore || 0} pontos
+                                </div>
                               </div>
                             </div>
-                            <div className="text-center">
-                              <div className="text-2xl font-bold text-[hsl(var(--safe))]">{user?.verifiedReportsCount || 0}</div>
-                              <div className="text-xs text-muted-foreground">
-                                {isMobile ? labels.verifications.mobile : labels.verifications.desktop}
+                            {user?.userLevel !== 'verificado' && (
+                              <div className="space-y-2">
+                                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                                  <div 
+                                    className="h-full bg-primary rounded-full transition-all"
+                                    style={{ 
+                                      width: `${user?.userLevel === 'novo' 
+                                        ? Math.min(100, ((user?.reputationScore || 0) / 30) * 100)
+                                        : Math.min(100, ((user?.reputationScore || 0) / 50) * 100)
+                                      }%` 
+                                    }}
+                                  />
+                                </div>
                               </div>
-                            </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Legenda do Mapa */}
+                        <div className="pt-4 border-t border-border">
+                          <h4 className="text-xs font-bold uppercase text-muted-foreground tracking-widest mb-4 px-4">Legenda do Mapa</h4>
+                          <div className="grid grid-cols-1 gap-1">
+                            {[
+                              { icon: Shield, label: labels.incidentTypes.abrigo_seguro.desktop, color: 'text-[hsl(var(--safe))]' },
+                              { icon: AlertTriangle, label: labels.incidentTypes.assedio.desktop, color: 'text-destructive' },
+                              { icon: Lightbulb, label: labels.incidentTypes.iluminacao_precaria.desktop, color: 'text-[hsl(var(--warning))]' },
+                              { icon: Ghost, label: labels.incidentTypes.deserto.desktop, color: 'text-gray-500' },
+                            ].map((item, i) => (
+                              <div key={i} className="flex items-center gap-4 px-4 py-2 hover:bg-muted/30 rounded-lg transition-colors">
+                                <item.icon className={`w-5 h-5 ${item.color}`} />
+                                <span className="font-medium text-sm">{item.label}</span>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       </div>
                     )}
-                    
-                    <div className="pt-8 space-y-2">
-                      <h3 className="text-sm font-bold uppercase text-muted-foreground tracking-wider mb-4">
-                        {isMobile ? labels.legend.mobile : labels.legend.desktop}
-                      </h3>
-                      {[
-                        { icon: Shield, label: isMobile ? labels.incidentTypes.abrigo_seguro.mobile : labels.incidentTypes.abrigo_seguro.desktop, color: 'text-[hsl(var(--safe))]' },
-                        { icon: AlertTriangle, label: isMobile ? labels.incidentTypes.assedio.mobile : labels.incidentTypes.assedio.desktop, color: 'text-destructive' },
-                        { icon: Lightbulb, label: isMobile ? labels.incidentTypes.iluminacao_precaria.mobile : labels.incidentTypes.iluminacao_precaria.desktop, color: 'text-[hsl(var(--warning))]' },
-                        { icon: Ghost, label: isMobile ? labels.incidentTypes.deserto.mobile : labels.incidentTypes.deserto.desktop, color: 'text-gray-500' },
-                      ].map((item, i) => (
-                        <div key={i} className="flex items-center gap-3 p-2 hover:bg-muted/50 rounded-lg transition-colors">
-                          <item.icon className={`w-5 h-5 ${item.color}`} />
-                          <span className="font-medium">{item.label}</span>
-                        </div>
-                      ))}
-                    </div>
                   </div>
 
                   <div className="pt-6 border-t border-border space-y-2 flex-shrink-0">
