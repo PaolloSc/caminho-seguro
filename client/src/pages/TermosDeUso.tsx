@@ -4,19 +4,24 @@ import { ArrowLeft } from "lucide-react";
 
 export default function TermosDeUso() {
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-3xl mx-auto px-4 py-8">
-        <Link href="/">
-          <Button variant="ghost" className="mb-6" data-testid="button-back">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Voltar ao Mapa
-          </Button>
-        </Link>
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
+      <header className="flex-shrink-0 bg-primary border-b border-primary/20 text-primary-foreground">
+        <div className="flex items-center justify-between px-4 h-16">
+          <Link href="/configuracoes">
+            <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary-foreground/10" data-testid="button-back">
+              <ArrowLeft className="w-6 h-6" />
+            </Button>
+          </Link>
+          <h1 className="font-bold text-lg">Termos de Uso</h1>
+          <div className="w-10" /> {/* Spacer */}
+        </div>
+      </header>
 
-        <h1 className="text-3xl font-bold mb-6">Termos de Uso</h1>
-        <p className="text-muted-foreground mb-8">Última atualização: Janeiro de 2026</p>
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-3xl mx-auto px-6 py-10 pb-20">
+          <p className="text-sm font-bold text-muted-foreground mb-8 uppercase tracking-widest">Última atualização: Janeiro de 2026</p>
 
-        <div className="prose prose-sm dark:prose-invert max-w-none space-y-6">
+          <div className="prose prose-sm dark:prose-invert max-w-none space-y-10">
           <section>
             <h2 className="text-xl font-semibold mb-3">1. Aceitação dos Termos</h2>
             <p className="text-muted-foreground leading-relaxed">
