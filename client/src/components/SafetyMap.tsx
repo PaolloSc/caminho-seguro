@@ -440,12 +440,18 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
       // Força recarga dos tiles imediatamente
       map.invalidateSize();
       
-      // Solicita localização imediatamente de forma mais assertiva
-      map.locate({ setView: false, maxZoom: 18, enableHighAccuracy: true });
+      // Solicita localização com alta precisão (GPS) - aguarda mais tempo para precisão total
+      map.locate({ 
+        setView: false, 
+        maxZoom: 18, 
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0
+      });
 
-      // Inicia a animação assim que o mapa estiver pronto, sem esperar muito
+      // Inicia a animação focando exatamente na posição do usuário
       const startAnimation = (lat: number, lng: number) => {
-        // Usa o zoom 18 para ser bem exato na localização
+        // Zoom 18 = máxima precisão visual na localização exata
         map.flyTo([lat, lng], 18, {
           duration: 2.5,
           easeLinearity: 0.25
@@ -459,25 +465,25 @@ export function SafetyMap({ reports, onAddReport, onViewReport, className, isNig
         setIsInitialAnimation(false);
       };
 
-      // Se já temos a posição exata (não aproximada), voa agora mesmo
+      // Se já temos a posição exata do GPS, voa imediatamente
       if (userPosition) {
         startAnimation(userPosition.lat, userPosition.lng);
       } else {
-        // Força a geolocalização exata
+        // Aguarda a posição exata do GPS/navegador
         const onLocationFound = (e: L.LocationEvent) => {
-          // Garante que usamos a posição exata detectada pelo GPS/Navegador
+          // Usa a posição exata detectada pelo GPS
           startAnimation(e.latlng.lat, e.latlng.lng);
           map.off('locationfound', onLocationFound);
         };
         map.on('locationfound', onLocationFound);
         
-        // Timer de segurança: se em 1500ms não achar o GPS, usa BH como fallback
+        // Timer de segurança: aguarda até 3s para GPS de alta precisão
         const safetyTimer = setTimeout(() => {
           if (isInitialAnimation) {
             startAnimation(-19.9167, -43.9345);
             map.off('locationfound', onLocationFound);
           }
-        }, 1500);
+        }, 3000);
         return () => {
           clearTimeout(safetyTimer);
           map.off('locationfound', onLocationFound);
