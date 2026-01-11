@@ -113,8 +113,8 @@ export default function Configuracoes() {
     : user?.firstName || 'Usuária';
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-10 bg-background border-b border-border">
+    <div className="h-screen flex flex-col bg-background overflow-hidden">
+      <header className="flex-shrink-0 bg-background border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <Link href="/">
             <Button variant="ghost" size="icon" data-testid="button-back">
@@ -130,30 +130,31 @@ export default function Configuracoes() {
         </div>
       </header>
 
-      <div className="flex flex-col items-center py-8">
-        <div className="relative">
-          <Avatar className="w-28 h-28 border-4 border-background shadow-lg">
-            <AvatarImage src={user?.profileImageUrl || undefined} />
-            <AvatarFallback className="text-3xl bg-muted">
-              {user?.firstName?.[0]}{user?.lastName?.[0]}
-            </AvatarFallback>
-          </Avatar>
-          <Button 
-            size="icon" 
-            className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary text-primary-foreground shadow-md"
-            onClick={() => {
-              setFirstName(user?.firstName || "");
-              setLastName(user?.lastName || "");
-              setShowEditName(true);
-            }}
-            data-testid="button-edit-photo"
-          >
-            <Pencil className="w-4 h-4" />
-          </Button>
+      <div className="flex-1 overflow-y-auto">
+        <div className="flex flex-col items-center py-8">
+          <div className="relative">
+            <Avatar className="w-28 h-28 border-4 border-background shadow-lg">
+              <AvatarImage src={user?.profileImageUrl || undefined} />
+              <AvatarFallback className="text-3xl bg-muted">
+                {user?.firstName?.[0]}{user?.lastName?.[0]}
+              </AvatarFallback>
+            </Avatar>
+            <Button 
+              size="icon" 
+              className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary text-primary-foreground shadow-md"
+              onClick={() => {
+                setFirstName(user?.firstName || "");
+                setLastName(user?.lastName || "");
+                setShowEditName(true);
+              }}
+              data-testid="button-edit-photo"
+            >
+              <Pencil className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
-      </div>
 
-      <div className="px-4 space-y-0">
+        <div className="px-4 space-y-0 pb-8">
         <p className="text-sm text-muted-foreground px-4 py-3 bg-muted/30">
           Dados da conta
         </p>
@@ -289,6 +290,7 @@ export default function Configuracoes() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        </div>
       </div>
 
       <Dialog open={showEditName} onOpenChange={setShowEditName}>
