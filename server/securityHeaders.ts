@@ -5,7 +5,7 @@ export function securityHeaders(req: Request, res: Response, next: NextFunction)
   res.setHeader("Server", "CaminhoSeguro");
   
   res.setHeader("X-Content-Type-Options", "nosniff");
-  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("X-Frame-Options", "SAMEORIGIN");
   res.setHeader("X-XSS-Protection", "1; mode=block");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
   res.setHeader("Permissions-Policy", "geolocation=(self), microphone=(), camera=(), payment=()");
@@ -23,7 +23,7 @@ export function securityHeaders(req: Request, res: Response, next: NextFunction)
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
-    "frame-ancestors 'none'",
+    "frame-ancestors 'self' https://*.replit.dev https://*.replit.app https://*.repl.co",
     "upgrade-insecure-requests"
   ].join("; ");
   
