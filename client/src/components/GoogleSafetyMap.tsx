@@ -86,6 +86,33 @@ async function fetchPOIs(bounds: google.maps.LatLngBounds): Promise<POI[]> {
 
 async function fetchRoute(start: { lat: number; lng: number }, end: { lat: number; lng: number }): Promise<google.maps.LatLngLiteral[] | null> {
   try {
+    const directionsService = new google.maps.DirectionsService();
+    
+    const result = await new Promise<google.maps.DirectionsResult | null>((resolve) => {
+      directionsService.route(
+        {
+          origin: start,
+          destination: end,
+          travelMode: google.maps.TravelMode.WALKING,
+        },
+        (result, status) => {
+          if (status === google.maps.DirectionsStatus.OK) {
+            resolve(result);
+          } else {
+            console.error('Erro DirectionsService:', status);
+            resolve(null);
+          }
+        }
+      );
+    });
+
+    if (result && result.routes[0]?.overview_path) {
+      return result.routes[0].overview_path.map(p => ({
+        lat: p.lat(),
+        lng: p.lng()
+      }));
+    }
+    
     const url = `https://router.project-osrm.org/route/v1/foot/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&geometries=geojson`;
     const response = await fetch(url);
     const data = await response.json();
