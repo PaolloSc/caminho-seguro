@@ -118,6 +118,19 @@
   }
 }
 
+/* Fix Google Maps white lines/grid issues */
+.gm-style div {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+.gm-style img {
+  border-style: none;
+  max-width: none !important;
+}
+.gm-style > div:first-child {
+  background-color: transparent !important;
+}
+
 /* Custom Marker Styles */
 .custom-marker-icon {
   background: transparent;

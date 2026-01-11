@@ -566,23 +566,25 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
   }
 
   return (
-    <div className={`relative w-full h-full overflow-hidden ${className}`}>
+    <div className={`relative w-full h-full overflow-hidden bg-[#242f3e] ${className}`}>
       <GoogleMap
-        mapContainerStyle={containerStyle}
+        mapContainerStyle={ { width: '100%', height: '100%', position: 'absolute' } }
         center={defaultCenter}
         zoom={15}
         onLoad={onLoad}
         onUnmount={onUnmount}
         onClick={handleMapClick}
         onIdle={refreshPOIs}
-        options={{
+        options={ {
           zoomControl: false,
           streetViewControl: false,
           mapTypeControl: false,
           fullscreenControl: false,
           styles: isNightMode ? darkMapStyles : undefined,
           gestureHandling: 'greedy',
-        }}
+          backgroundColor: isNightMode ? '#242f3e' : '#e5e3df',
+          noClear: true,
+        } }
       >
         {showHeatmap && heatmapData.length > 0 && (
           <HeatmapLayer
@@ -901,72 +903,80 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
       </div>
 
       {showRoutePlanner && (
-        <div className="absolute top-[calc(env(safe-area-inset-top)+70px)] sm:top-4 left-3 right-3 sm:left-4 sm:right-20 z-10 bg-card p-3 rounded-lg shadow-lg max-w-[calc(100%-60px)] sm:max-w-none max-h-[calc(100%-env(safe-area-inset-top)-90px)] sm:max-h-none overflow-y-auto">
-          <div className="flex items-center gap-2 mb-2">
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={() => {
-                setShowRoutePlanner(false);
-                setRouteCoords(null);
-                setRouteSafety(null);
-                setDestinationMarker(null);
-                setDestinationQuery('');
-              }}
-              className="shrink-0 sm:hidden"
-              data-testid="button-close-route-planner-mobile"
-            >
-              <X className="w-4 h-4" />
-            </Button>
-            <div className="flex-1 relative min-w-0">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Para onde você vai?"
-                value={destinationQuery}
-                onChange={(e) => setDestinationQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearchRoute()}
-                className="w-full pl-9 pr-3 py-2 text-sm rounded-md border bg-background"
-                data-testid="input-destination"
-              />
+        <div className="absolute top-[calc(env(safe-area-inset-top)+80px)] sm:top-20 left-4 right-4 sm:left-auto sm:right-4 z-[9999] bg-card p-4 rounded-xl shadow-2xl w-auto sm:w-80 max-h-[calc(100vh-200px)] overflow-y-auto border border-border/50 backdrop-blur-md">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-display font-bold text-base">Planejador de Rota</h3>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => {
+                  setShowRoutePlanner(false);
+                  setRouteCoords(null);
+                  setRouteSafety(null);
+                  setDestinationMarker(null);
+                  setDestinationQuery('');
+                }}
+                className="h-8 w-8 rounded-full"
+                data-testid="button-close-route-planner"
+              >
+                <X className="w-4 h-4" />
+              </Button>
             </div>
-            <Button
-              size="sm"
-              onClick={handleSearchRoute}
-              disabled={isSearchingRoute || !userPosition}
-              className="shrink-0"
-              data-testid="button-search-route"
-            >
-              {isSearchingRoute ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Ir'}
-            </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={() => {
-                setShowRoutePlanner(false);
-                setRouteCoords(null);
-                setRouteSafety(null);
-                setDestinationMarker(null);
-                setDestinationQuery('');
-              }}
-              className="shrink-0 hidden sm:flex"
-              data-testid="button-close-route-planner"
-            >
-              <X className="w-4 h-4" />
-            </Button>
+
+            <div className="space-y-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Para onde você vai?"
+                  value={destinationQuery}
+                  onChange={(e) => setDestinationQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearchRoute()}
+                  className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border bg-background focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                  data-testid="input-destination"
+                />
+              </div>
+
+              <Button
+                className="w-full h-10 font-bold"
+                onClick={handleSearchRoute}
+                disabled={isSearchingRoute || !userPosition}
+                data-testid="button-search-route"
+              >
+                {isSearchingRoute ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : (
+                  <Navigation2 className="w-4 h-4 mr-2" />
+                )}
+                {isSearchingRoute ? 'Calculando...' : 'Traçar Rota Segura'}
+              </Button>
+            </div>
           </div>
           
           {routeSafety && (
-            <div className={`p-2 rounded-md text-sm ${
-              routeSafety.score >= 70 ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
-              routeSafety.score >= 40 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
-              'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+            <div className={`mt-4 p-3 rounded-lg border shadow-inner ${
+              routeSafety.score >= 70 ? 'bg-green-500/10 border-green-500/20 text-green-700 dark:text-green-400' :
+              routeSafety.score >= 40 ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-700 dark:text-yellow-400' :
+              'bg-red-500/10 border-red-500/20 text-red-700 dark:text-red-400'
             }`}>
-              <div className="flex items-center justify-between flex-wrap gap-1">
-                <span className="font-medium">Segurança: {routeSafety.score}%</span>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-sm">Nível de Segurança</span>
+                  <span className="font-bold text-lg">{routeSafety.score}%</span>
+                </div>
+                <div className="h-1.5 w-full bg-black/5 dark:bg-white/5 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full transition-all duration-500 ${
+                      routeSafety.score >= 70 ? 'bg-green-500' :
+                      routeSafety.score >= 40 ? 'bg-yellow-500' : 'bg-red-500'
+                    }`}
+                    style={ { width: `${routeSafety.score}%` } }
+                  />
+                </div>
                 {routeSafety.nearbyDangers > 0 && (
-                  <span className="text-xs">
-                    {routeSafety.nearbyDangers} alerta{routeSafety.nearbyDangers > 1 ? 's' : ''}
+                  <span className="text-xs mt-1 opacity-80">
+                    Encontramos {routeSafety.nearbyDangers} alerta{routeSafety.nearbyDangers > 1 ? 's' : ''} nesta rota.
                   </span>
                 )}
               </div>
