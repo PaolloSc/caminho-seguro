@@ -153,7 +153,6 @@ export default function Configuracoes() {
             </Button>
           </div>
           <h2 className="text-2xl font-bold">{userName}</h2>
-          <p className="text-primary-foreground/70 text-sm mt-1 font-medium">Nos ajude a salvar uma vida.</p>
         </div>
 
         <div className="px-4 space-y-6 py-8 pb-20">

@@ -149,7 +149,6 @@ export default function Home() {
                           </Avatar>
                         </div>
                         <h3 className="text-2xl font-bold text-foreground">{user?.firstName} {user?.lastName}</h3>
-                        <p className="text-muted-foreground font-medium">CaminhoSeguro</p>
                       </div>
                     ) : (
                       <div className="py-6 flex-shrink-0">
@@ -175,7 +174,6 @@ export default function Home() {
                         {/* Menu de Navegação */}
                         <div className="space-y-2">
                           {[
-                            { icon: MapPin, label: "Mapa de segurança", color: "text-red-500", href: "/" },
                             { icon: Settings, label: "Configurações", color: "text-blue-500", href: "/configuracoes" },
                           ].map((item, i) => (
                             <Link key={i} href={item.href}>
