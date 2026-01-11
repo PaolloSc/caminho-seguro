@@ -163,6 +163,78 @@ const POI_COLORS: Record<string, string> = {
   police: '#8b5cf6'
 };
 
+// SVG paths dos ícones Lucide (24x24 viewBox)
+const ICON_PATHS: Record<string, string> = {
+  shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z',
+  alertTriangle: 'M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z M12 9v4 M12 17h.01',
+  lightbulb: 'M9 18h6 M10 22h4 M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7z',
+  ghost: 'M9 10h.01 M15 10h.01 M12 2a8 8 0 0 0-8 8v12l3-3 2 2 3-3 3 3 2-2 3 3V10a8 8 0 0 0-8-8z',
+  bus: 'M8 6v6 M16 6v6 M4 11h16 M5 17h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2z M7 17v2 M17 17v2',
+  tree: 'M12 22v-7 M12 8V2 M8 12l4-4 4 4 M5 18l7-6 7 6',
+  hospital: 'M3 21h18 M9 8h6 M12 8v8 M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16',
+  police: 'M12 2l9 4.5v5c0 5-3.5 9.74-9 11.5-5.5-1.76-9-6.5-9-11.5v-5L12 2z M12 8v4 M12 16h.01'
+};
+
+function createReportMarkerSvg(type: string): string {
+  const color = REPORT_COLORS[type] || '#6b7280';
+  let iconPath = '';
+  
+  switch (type) {
+    case 'assedio':
+      iconPath = '<path d="M12 9v4" stroke="white" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16" r="1" fill="white"/><path d="M10.29 5.86L3.82 17a2 2 0 0 0 1.71 3h12.94a2 2 0 0 0 1.71-3L13.71 5.86a2 2 0 0 0-3.42 0z" fill="none" stroke="white" stroke-width="1.5"/>';
+      break;
+    case 'iluminacao_precaria':
+      iconPath = '<path d="M12 4a5 5 0 0 0-5 5c0 1.7.85 3.2 2.15 4.1V15a.85.85 0 0 0 .85.85h4a.85.85 0 0 0 .85-.85v-1.9A5 5 0 0 0 12 4z" fill="white"/><path d="M9.5 17.5h5" stroke="white" stroke-width="1.5" stroke-linecap="round"/><path d="M10 19.5h4" stroke="white" stroke-width="1.5" stroke-linecap="round"/>';
+      break;
+    case 'local_deserto':
+      iconPath = '<circle cx="9" cy="10" r="1.5" fill="white"/><circle cx="15" cy="10" r="1.5" fill="white"/><path d="M12 4a6 6 0 0 0-6 6v9l2-2 1.5 1.5 2.5-2.5 2.5 2.5 1.5-1.5 2 2V10a6 6 0 0 0-6-6z" fill="none" stroke="white" stroke-width="1.5"/>';
+      break;
+    case 'abrigo_seguro':
+      iconPath = '<path d="M12 4l6 3v4.5c0 3.75-2.6 7.3-6 8.5-3.4-1.2-6-4.75-6-8.5V7l6-3z" fill="white"/><path d="M9 12l2 2 4-4" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+      break;
+  }
+  
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="48" viewBox="0 0 40 48">
+    <defs>
+      <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+        <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/>
+      </filter>
+    </defs>
+    <path d="M20 0C11.72 0 5 6.72 5 15c0 10.5 15 29 15 29s15-18.5 15-29C35 6.72 28.28 0 20 0z" fill="${color}" filter="url(#shadow)"/>
+    <circle cx="20" cy="15" r="11" fill="${color}"/>
+    <g transform="translate(8, 3)">${iconPath}</g>
+  </svg>`;
+  
+  return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+}
+
+function createPOIMarkerSvg(type: string): string {
+  const color = POI_COLORS[type] || '#6b7280';
+  let iconPath = '';
+  
+  switch (type) {
+    case 'bus_stop':
+      iconPath = '<rect x="5" y="4" width="14" height="12" rx="2" fill="none" stroke="white" stroke-width="1.5"/><line x1="5" y1="10" x2="19" y2="10" stroke="white" stroke-width="1.5"/><line x1="8" y1="5" x2="8" y2="10" stroke="white" stroke-width="1.5"/><line x1="16" y1="5" x2="16" y2="10" stroke="white" stroke-width="1.5"/><circle cx="8" cy="18" r="1.5" fill="white"/><circle cx="16" cy="18" r="1.5" fill="white"/>';
+      break;
+    case 'park':
+      iconPath = '<path d="M12 20v-6" stroke="white" stroke-width="2" stroke-linecap="round"/><path d="M12 3l-6 8h4l-3 5h10l-3-5h4L12 3z" fill="white"/>';
+      break;
+    case 'hospital':
+      iconPath = '<path d="M4 20h16" stroke="white" stroke-width="1.5" stroke-linecap="round"/><path d="M6 20V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v14" fill="none" stroke="white" stroke-width="1.5"/><path d="M9 10h6" stroke="white" stroke-width="2" stroke-linecap="round"/><path d="M12 7v6" stroke="white" stroke-width="2" stroke-linecap="round"/>';
+      break;
+    case 'police':
+      iconPath = '<path d="M12 3l7 3.5v4c0 4-2.8 7.8-7 9.2-4.2-1.4-7-5.2-7-9.2v-4L12 3z" fill="none" stroke="white" stroke-width="1.5"/><path d="M12 8v3" stroke="white" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="14" r="1" fill="white"/>';
+      break;
+  }
+  
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28">
+    <circle cx="14" cy="14" r="12" fill="${color}" stroke="white" stroke-width="2"/>
+    <g transform="translate(2, 2)">${iconPath}</g>
+  </svg>`;
+  
+  return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+}
+
 function getReportIcon(type: string) {
   switch (type) {
     case 'assedio': return AlertTriangle;
@@ -568,7 +640,11 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
           <Marker
             key={report.id}
             position={{ lat: report.lat, lng: report.lng }}
-            icon={createMarkerIcon(REPORT_COLORS[report.type] || '#6b7280')}
+            icon={{
+              url: createReportMarkerSvg(report.type),
+              scaledSize: new google.maps.Size(40, 48),
+              anchor: new google.maps.Point(20, 48),
+            }}
             onClick={() => {
               setSelectedReport(report);
               setSelectedPOI(null);
@@ -580,7 +656,11 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
           <Marker
             key={poi.id}
             position={{ lat: poi.lat, lng: poi.lng }}
-            icon={createMarkerIcon(POI_COLORS[poi.type], 22)}
+            icon={{
+              url: createPOIMarkerSvg(poi.type),
+              scaledSize: new google.maps.Size(28, 28),
+              anchor: new google.maps.Point(14, 14),
+            }}
             onClick={() => {
               setSelectedPOI(poi);
               setSelectedReport(null);
