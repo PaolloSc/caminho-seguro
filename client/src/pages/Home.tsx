@@ -27,7 +27,13 @@ export default function Home() {
   const { user, isAuthenticated, logout } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
-  const L = (key: keyof typeof labels) => isMobile ? labels[key].mobile : labels[key].desktop;
+  const L = (key: keyof typeof labels) => {
+    const label = labels[key];
+    if (typeof label === 'object' && 'mobile' in label) {
+      return isMobile ? (label as any).mobile : (label as any).desktop;
+    }
+    return '';
+  };
   
   const [isDarkMode, setIsDarkMode] = useState(() => {
     // Inicializa com base na hora do dia
