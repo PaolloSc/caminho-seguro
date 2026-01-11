@@ -222,7 +222,41 @@ interface SafetyMapProps {
   isNightMode?: boolean;
 }
 
-export function GoogleSafetyMap({ reports, onAddReport, onViewReport, className, isNightMode = false }: SafetyMapProps) {
+// Wrapper component que busca a chave API antes de montar o mapa
+export function GoogleSafetyMap(props: SafetyMapProps) {
+  const { data: mapsConfig, isLoading: isLoadingConfig, isError: isConfigError } = useMapsConfig();
+  const apiKey = mapsConfig?.apiKey ?? '';
+
+  // Mostrar loading enquanto busca a configuração
+  if (isLoadingConfig) {
+    return (
+      <div className={`flex items-center justify-center bg-muted/50 rounded-lg ${props.className || 'h-[600px]'}`}>
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-primary" />
+          <p className="text-muted-foreground text-sm">Carregando mapa...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Mostrar erro se falhou ao buscar configuração
+  if (isConfigError || !apiKey) {
+    return (
+      <div className={`flex items-center justify-center bg-destructive/10 rounded-lg ${props.className || 'h-[600px]'}`}>
+        <div className="text-center text-destructive">
+          <AlertTriangle className="w-8 h-8 mx-auto mb-2" />
+          <p className="text-sm">Erro ao carregar configurações do mapa</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Só renderiza o mapa interno quando temos a chave API
+  return <GoogleSafetyMapInner {...props} apiKey={apiKey} />;
+}
+
+// Componente interno com o useJsApiLoader - só é montado quando apiKey está disponível
+function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, isNightMode = false, apiKey }: SafetyMapProps & { apiKey: string }) {
   const { user } = useAuth();
   const { toast } = useToast();
   const { mutate: verifyReport, isPending: isVerifying } = useVerifyReport();
@@ -250,13 +284,10 @@ export function GoogleSafetyMap({ reports, onAddReport, onViewReport, className,
     enabled: navigationMode
   });
 
-  const { data: mapsConfig, isLoading: isLoadingConfig } = useMapsConfig();
-  const apiKey = mapsConfig?.apiKey || '';
-  
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: apiKey,
-    libraries
+    libraries,
   });
 
   const heatmapData = useMemo(() => {
@@ -440,15 +471,6 @@ export function GoogleSafetyMap({ reports, onAddReport, onViewReport, className,
     strokeWeight: 2,
     scale: size / 4,
   });
-
-  if (isLoadingConfig || !apiKey) {
-    return (
-      <div className="flex items-center justify-center h-full bg-muted">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <span className="ml-2 text-muted-foreground">Carregando configurações...</span>
-      </div>
-    );
-  }
 
   if (loadError) {
     return (
