@@ -588,12 +588,26 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
           />
         ))}
 
-        {selectedReport && (
+        {selectedReport && (() => {
+          const isDark = isNightMode;
+          const theme = {
+            bg: isDark ? '#1f2937' : '#ffffff',
+            text: isDark ? '#f9fafb' : '#1f2937',
+            textMuted: isDark ? '#9ca3af' : '#6b7280',
+            textSubtle: isDark ? '#6b7280' : '#9ca3af',
+            btnBg: isDark ? '#374151' : '#ffffff',
+            btnBorder: isDark ? '#4b5563' : '#d1d5db',
+            btnText: isDark ? '#f3f4f6' : '#374151',
+            dangerBg: isDark ? '#7f1d1d' : '#fef2f2',
+            dangerBorder: isDark ? '#991b1b' : '#fecaca',
+            dangerText: isDark ? '#fca5a5' : '#dc2626',
+          };
+          return (
           <InfoWindow
             position={{ lat: selectedReport.lat, lng: selectedReport.lng }}
             onCloseClick={() => setSelectedReport(null)}
           >
-            <div style={{ padding: '12px', minWidth: '240px', fontFamily: 'system-ui, sans-serif' }}>
+            <div style={{ padding: '12px', minWidth: '240px', fontFamily: 'system-ui, sans-serif', backgroundColor: theme.bg, borderRadius: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                 <div style={{ 
                   width: '28px', 
@@ -611,7 +625,7 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
                     {selectedReport.type === 'abrigo_seguro' && '🛡'}
                   </span>
                 </div>
-                <span style={{ fontWeight: '600', fontSize: '14px', color: '#1f2937' }}>
+                <span style={{ fontWeight: '600', fontSize: '14px', color: theme.text }}>
                   {selectedReport.type === 'assedio' && 'Assédio'}
                   {selectedReport.type === 'iluminacao_precaria' && 'Iluminação Precária'}
                   {selectedReport.type === 'local_deserto' && 'Local Deserto'}
@@ -622,7 +636,7 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
               {selectedReport.description && (
                 <p style={{ 
                   fontSize: '12px', 
-                  color: '#6b7280', 
+                  color: theme.textMuted, 
                   marginBottom: '8px',
                   overflow: 'hidden',
                   display: '-webkit-box',
@@ -633,10 +647,10 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
                 </p>
               )}
               
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '11px', color: '#9ca3af', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '11px', color: theme.textSubtle, marginBottom: '12px' }}>
                 <span>{selectedReport.createdAt ? format(new Date(selectedReport.createdAt), 'dd/MM/yyyy HH:mm') : ''}</span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  👍 {selectedReport.verifiedCount || 0}
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#22c55e' }}>
+                  ✓ {selectedReport.verifiedCount || 0}
                 </span>
               </div>
               
@@ -648,9 +662,10 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
                   style={{
                     padding: '6px 10px',
                     fontSize: '12px',
-                    border: '1px solid #d1d5db',
+                    border: `1px solid ${theme.btnBorder}`,
                     borderRadius: '6px',
-                    backgroundColor: 'white',
+                    backgroundColor: theme.btnBg,
+                    color: theme.btnText,
                     cursor: isVerifying || !user ? 'not-allowed' : 'pointer',
                     opacity: isVerifying || !user ? 0.5 : 1,
                     display: 'flex',
@@ -658,7 +673,7 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
                     gap: '4px'
                   }}
                 >
-                  👍 Confirmar
+                  ✓ Confirmar
                 </button>
                 <button
                   onClick={() => downvoteReport(selectedReport.id)}
@@ -667,9 +682,10 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
                   style={{
                     padding: '6px 10px',
                     fontSize: '12px',
-                    border: '1px solid #d1d5db',
+                    border: `1px solid ${theme.btnBorder}`,
                     borderRadius: '6px',
-                    backgroundColor: 'white',
+                    backgroundColor: theme.btnBg,
+                    color: theme.btnText,
                     cursor: isDownvoting || !user ? 'not-allowed' : 'pointer',
                     opacity: isDownvoting || !user ? 0.5 : 1,
                     display: 'flex',
@@ -677,7 +693,7 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
                     gap: '4px'
                   }}
                 >
-                  👎 Negar
+                  ✗ Negar
                 </button>
                 <button
                   onClick={() => flagReport({ reportId: selectedReport.id, reason: 'falso' })}
@@ -686,15 +702,15 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
                   style={{
                     padding: '6px 10px',
                     fontSize: '12px',
-                    border: '1px solid #fecaca',
+                    border: `1px solid ${theme.dangerBorder}`,
                     borderRadius: '6px',
-                    backgroundColor: '#fef2f2',
-                    color: '#dc2626',
+                    backgroundColor: theme.dangerBg,
+                    color: theme.dangerText,
                     cursor: isFlagging || !user ? 'not-allowed' : 'pointer',
                     opacity: isFlagging || !user ? 0.5 : 1
                   }}
                 >
-                  🚩
+                  ⚑
                 </button>
                 <button
                   onClick={() => onViewReport(selectedReport.id)}
@@ -716,14 +732,21 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
               </div>
             </div>
           </InfoWindow>
-        )}
+          );
+        })()}
 
-        {selectedPOI && (
+        {selectedPOI && (() => {
+          const isDark = isNightMode;
+          const theme = {
+            bg: isDark ? '#1f2937' : '#ffffff',
+            text: isDark ? '#f9fafb' : '#1f2937',
+          };
+          return (
           <InfoWindow
             position={{ lat: selectedPOI.lat, lng: selectedPOI.lng }}
             onCloseClick={() => setSelectedPOI(null)}
           >
-            <div style={{ padding: '10px', fontFamily: 'system-ui, sans-serif' }}>
+            <div style={{ padding: '10px', fontFamily: 'system-ui, sans-serif', backgroundColor: theme.bg, borderRadius: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <div style={{ 
                   width: '24px', 
@@ -741,7 +764,7 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
                     {selectedPOI.type === 'police' && '🚔'}
                   </span>
                 </div>
-                <span style={{ fontWeight: '600', fontSize: '13px', color: '#1f2937' }}>
+                <span style={{ fontWeight: '600', fontSize: '13px', color: theme.text }}>
                   {selectedPOI.name || (
                     selectedPOI.type === 'bus_stop' ? 'Ponto de Ônibus' :
                     selectedPOI.type === 'park' ? 'Praça/Parque' :
@@ -752,7 +775,8 @@ function GoogleSafetyMapInner({ reports, onAddReport, onViewReport, className, i
               </div>
             </div>
           </InfoWindow>
-        )}
+          );
+        })()}
       </GoogleMap>
 
       <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
