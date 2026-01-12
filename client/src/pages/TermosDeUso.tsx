@@ -106,15 +106,15 @@ export default function TermosDeUso() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-3">9. Controlador de Dados</h2>
+            <h2 className="text-xl font-semibold mb-3">9. Responsável pelo Tratamento de Dados</h2>
             <p className="text-muted-foreground leading-relaxed">
-              O controlador responsável pelo tratamento dos seus dados pessoais é:
+              O responsável pelo tratamento dos seus dados pessoais é:
             </p>
             <div className="bg-muted/30 p-4 rounded-lg mt-3 space-y-2 text-muted-foreground">
               <p><strong>CaminhoSeguro</strong></p>
-              <p>CNPJ: [A ser definido]</p>
-              <p>Endereço: São Paulo, SP - Brasil</p>
-              <p>DPO: dpo@caminhoseguro.com.br</p>
+              <p>Projeto independente de segurança comunitária</p>
+              <p>São Paulo, SP - Brasil</p>
+              <p>Contato: contato@caminhoseguro.ltd</p>
             </div>
           </section>
 
@@ -130,14 +130,14 @@ export default function TermosDeUso() {
               <li>Revogar consentimento a qualquer momento</li>
             </ul>
             <p className="text-muted-foreground leading-relaxed mt-3">
-              Para exercer seus direitos, envie email para: privacidade@caminhoseguro.com.br
+              Para exercer seus direitos, envie email para: contato@caminhoseguro.ltd
             </p>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold mb-3">11. Contato</h2>
             <p className="text-muted-foreground leading-relaxed">
-              Para dúvidas sobre estes Termos de Uso, entre em contato através do email: contato@caminhoseguro.com.br
+              Para dúvidas sobre estes Termos de Uso ou qualquer assunto relacionado ao app, entre em contato: contato@caminhoseguro.ltd
             </p>
           </section>
         </div>

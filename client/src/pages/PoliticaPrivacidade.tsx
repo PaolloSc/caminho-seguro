@@ -96,7 +96,7 @@ export default function PoliticaPrivacidade() {
               <li><strong>Oposição:</strong> Opor-se ao tratamento em certas circunstâncias</li>
             </ul>
             <p className="text-muted-foreground leading-relaxed mt-2">
-              Para exercer seus direitos, entre em contato: privacidade@caminhoseguro.com.br
+              Para exercer seus direitos, entre em contato: contato@caminhoseguro.ltd
             </p>
           </section>
 
@@ -150,36 +150,25 @@ export default function PoliticaPrivacidade() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-3">10. Controlador de Dados</h2>
+            <h2 className="text-xl font-semibold mb-3">10. Responsável pelo Tratamento de Dados</h2>
             <p className="text-muted-foreground leading-relaxed">
-              O controlador responsável pelo tratamento dos seus dados pessoais é:
+              O responsável pelo tratamento dos seus dados pessoais é:
             </p>
             <div className="bg-muted/30 p-4 rounded-lg mt-3 space-y-2 text-muted-foreground">
               <p><strong>CaminhoSeguro</strong></p>
-              <p>CNPJ: [A ser definido]</p>
-              <p>Endereço: São Paulo, SP - Brasil</p>
+              <p>Projeto independente de segurança comunitária</p>
+              <p>São Paulo, SP - Brasil</p>
+              <p>Contato: contato@caminhoseguro.ltd</p>
             </div>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-3">11. Encarregado de Proteção de Dados (DPO)</h2>
-            <p className="text-muted-foreground leading-relaxed">
-              Conforme exigido pela LGPD, designamos um Encarregado de Proteção de Dados:
-            </p>
-            <div className="bg-muted/30 p-4 rounded-lg mt-3 space-y-2 text-muted-foreground">
-              <p><strong>Encarregado:</strong> [Nome a ser definido]</p>
-              <p><strong>Email:</strong> dpo@caminhoseguro.com.br</p>
-              <p><strong>Telefone:</strong> [A ser definido]</p>
-            </div>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-semibold mb-3">12. Como Exercer Seus Direitos</h2>
+            <h2 className="text-xl font-semibold mb-3">11. Como Exercer Seus Direitos</h2>
             <p className="text-muted-foreground leading-relaxed">
               Para exercer qualquer dos seus direitos previstos na LGPD:
             </p>
             <ol className="list-decimal list-inside text-muted-foreground mt-2 space-y-2">
-              <li>Envie um email para: privacidade@caminhoseguro.com.br</li>
+              <li>Envie um email para: contato@caminhoseguro.ltd</li>
               <li>Informe seu nome completo e email de cadastro</li>
               <li>Descreva qual direito deseja exercer</li>
               <li>Responderemos em até 15 dias úteis</li>
@@ -190,14 +179,13 @@ export default function PoliticaPrivacidade() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-3">13. Contato Geral</h2>
+            <h2 className="text-xl font-semibold mb-3">12. Contato</h2>
             <p className="text-muted-foreground leading-relaxed">
-              Para questões gerais sobre privacidade:
+              Para dúvidas sobre privacidade ou qualquer assunto relacionado ao app:
             </p>
-            <ul className="list-disc list-inside text-muted-foreground mt-2 space-y-1">
-              <li>Email: privacidade@caminhoseguro.com.br</li>
-              <li>DPO: dpo@caminhoseguro.com.br</li>
-            </ul>
+            <div className="bg-muted/30 p-4 rounded-lg mt-3 text-muted-foreground">
+              <p><strong>Email:</strong> contato@caminhoseguro.ltd</p>
+            </div>
           </section>
         </div>
 
