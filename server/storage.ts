@@ -20,7 +20,7 @@ import {
 } from "@shared/schema";
 import { eq, sql, lt, and, desc } from "drizzle-orm";
 import crypto from "crypto";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 // === Funções de Hash para LGPD ===
 function hashAnonymous(value: string): string {
