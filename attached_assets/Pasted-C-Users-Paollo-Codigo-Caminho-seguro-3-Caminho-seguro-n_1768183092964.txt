@@ -1,0 +1,22 @@
+C:\Users\Paollo\Codigo\Caminho-seguro (3)\Caminho-seguro>npm install
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, open 'C:\Users\Paollo\Codigo\Caminho-seguro (3)\Caminho-seguro\node_modules\js-beautify\js\src\core\pattern.js'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat 'C:\Users\Paollo\Codigo\Caminho-seguro (3)\Caminho-seguro\node_modules\js-beautify\js'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat 'C:\Users\Paollo\Codigo\Caminho-seguro (3)\Caminho-seguro\node_modules\js-beautify\js'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat 'C:\Users\Paollo\Codigo\Caminho-seguro (3)\Caminho-seguro\node_modules\js-beautify\js'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat 'C:\Users\Paollo\Codigo\Caminho-seguro (3)\Caminho-seguro\node_modules\js-beautify\js'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat 'C:\Users\Paollo\Codigo\Caminho-seguro (3)\Caminho-seguro\node_modules\js-beautify\js'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat 'C:\Users\Paollo\Codigo\Caminho-seguro (3)\Caminho-seguro\node_modules\js-beautify\js'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat 'C:\Users\Paollo\Codigo\Caminho-seguro (3)\Caminho-seguro\node_modules\js-beautify\js'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat 'C:\Users\Paollo\Codigo\Caminho-seguro (3)\Caminho-seguro\node_modules\js-beautify\js'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat 'C:\Users\Paollo\Codigo\Caminho-seguro (3)\Caminho-seguro\node_modules\js-beautify\js'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat 'C:\Users\Paollo\Codigo\Caminho-seguro (3)\Caminho-seguro\node_modules\js-beautify\js'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, open 'C:\Users\Paollo\Codigo\Caminho-seguro (3)\Caminho-seguro\node_modules\js-beautify\package.json'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, open 'C:\Users\Paollo\Codigo\Caminho-seguro (3)\Caminho-seguro\node_modules\js-beautify\README.md'
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat 'C:\Users\Paollo\Codigo\Caminho-seguro (3)\Caminho-seguro\node_modules\native-run\assets\android\skins\pixel'
+npm error code 1
+npm error path C:\Users\Paollo\Codigo\Caminho-seguro (3)\Caminho-seguro\node_modules\bcrypt
+npm error command failed
+npm error command C:\WINDOWS\system32\cmd.exe /d /s /c node-gyp-build
+npm error 'node-gyp-build' não é reconhecido como um comando interno
+npm error ou externo, um programa operável ou um arquivo em lotes.
+npm error A complete log of this run can be found in: C:\Users\Paollo\AppData\Local\npm-cache\_logs\2026-01-12T01_53_23_629Z-debug-0.log
